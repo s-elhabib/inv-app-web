@@ -32,7 +32,7 @@ export interface Client {
 
 export interface Order {
   id: string;
-  userId: string;
+  invoiceNumber?: string;
   client?: Client;
   products: Array<{
     productId: string;

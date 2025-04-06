@@ -1,60 +1,244 @@
-'use client';
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, ShoppingCart, DollarSign, Box, Home, ShoppingBag, History, Settings } from "lucide-react";
+import {
+  Users,
+  Package,
+  ShoppingCart,
+  DollarSign,
+  Box,
+  Home,
+  ShoppingBag,
+  History,
+  Settings,
+  TrendingUp,
+  TrendingDown,
+  BarChart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { cn } from "@/lib/utils";
-
-const data = [
-  { name: 'Jan', value: 400 },
-  { name: 'Feb', value: 300 },
-  { name: 'Mar', value: 600 },
-  { name: 'Apr', value: 800 },
-  { name: 'May', value: 500 },
-  { name: 'Jun', value: 700 },
-];
-
-const stats = [
-  {
-    title: "Total Clients",
-    value: "21",
-    icon: Users,
-    trend: "+100%",
-    trendUp: true,
-  },
-  {
-    title: "Total Products",
-    value: "97",
-    icon: Package,
-    trend: "+100%",
-    trendUp: true,
-  },
-  {
-    title: "Total Revenue",
-    value: "174.7k MAD",
-    icon: DollarSign,
-    trend: "-8%",
-    trendUp: false,
-  },
-  {
-    title: "Total Orders",
-    value: "51",
-    icon: ShoppingCart,
-    trend: "-8%",
-    trendUp: false,
-  },
-  {
-    title: "Total Inventory Value",
-    value: "769.1k MAD",
-    icon: Box,
-    trend: "0%",
-    trendUp: true,
-  },
-];
+import { useState, useEffect } from "react";
+import { getClients, getProducts, getOrders } from "@/lib/supabase";
+import { format, subDays, startOfDay, endOfDay, parseISO } from "date-fns";
 
 export default function AdminPage() {
+  const [clients, setClients] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState("today");
+  const [isLoading, setIsLoading] = useState(true);
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  // Calculate stats
+  const totalClients = clients.length;
+  const totalProducts = products.length;
+  const totalOrders = orders.length;
+
+  // Calculate total revenue
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + (order.total_amount || 0),
+    0
+  );
+
+  // Calculate inventory value
+  const totalInventoryValue = products.reduce((sum, product) => {
+    return sum + (product.price * product.stock || 0);
+  }, 0);
+
+  // Calculate profit based on timeframe
+  const [profitTimeframe, setProfitTimeframe] = useState("today");
+  const [showProfit, setShowProfit] = useState(true);
+
+  // Calculate profit for different timeframes
+  const calculateProfitForTimeframe = (timeframe: string) => {
+    let filteredOrders = [];
+    const now = new Date();
+
+    // Filter orders based on timeframe
+    switch (timeframe) {
+      case "today":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+        });
+        break;
+      case "week":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 7)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "15days":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 15)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "month":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 30)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      default:
+        filteredOrders = orders;
+    }
+
+    // Calculate total revenue for filtered orders
+    const filteredRevenue = filteredOrders.reduce(
+      (sum, order) => sum + (order.total_amount || 0),
+      0
+    );
+
+    // Calculate profit (30% of revenue)
+    return filteredRevenue * 0.3;
+  };
+
+  const totalProfit = calculateProfitForTimeframe(profitTimeframe);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [clientsData, productsData, ordersData] = await Promise.all([
+          getClients(),
+          getProducts(),
+          getOrders(),
+        ]);
+
+        setClients(clientsData);
+        setProducts(productsData);
+        setOrders(ordersData);
+
+        // Generate chart data based on orders
+        generateChartData(ordersData, selectedTimeframe);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedTimeframe]);
+
+  const generateChartData = (orders: any[], timeframe: string) => {
+    let filteredOrders = [];
+    const now = new Date();
+
+    // Filter orders based on timeframe
+    switch (timeframe) {
+      case "today":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+        });
+        break;
+      case "week":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 7)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "month":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 30)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      default:
+        filteredOrders = orders;
+    }
+
+    // Group by date and sum amounts
+    const groupedData: { [key: string]: number } = {};
+
+    filteredOrders.forEach((order) => {
+      const date = format(parseISO(order.created_at), "MMM dd");
+      if (!groupedData[date]) {
+        groupedData[date] = 0;
+      }
+      groupedData[date] += order.total_amount || 0;
+    });
+
+    // Convert to array format for chart
+    const chartData = Object.keys(groupedData).map((date) => ({
+      name: date,
+      value: groupedData[date],
+    }));
+
+    setChartData(
+      chartData.length > 0 ? chartData : [{ name: "No Data", value: 0 }]
+    );
+  };
+
+  // Format numbers for display
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M MAD`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}k MAD`;
+    } else {
+      return `${value.toFixed(2)} MAD`;
+    }
+  };
+
+  const stats = [
+    {
+      title: "Total Clients",
+      value: totalClients,
+      icon: Users,
+      trend: "+100%",
+      trendUp: true,
+    },
+    {
+      title: "Total Products",
+      value: totalProducts,
+      icon: Package,
+      trend: "+100%",
+      trendUp: true,
+    },
+    {
+      title: "Total Revenue",
+      value: formatCurrency(totalRevenue),
+      icon: DollarSign,
+      trend: "-8%",
+      trendUp: false,
+    },
+    {
+      title: "Total Orders",
+      value: totalOrders,
+      icon: ShoppingCart,
+      trend: "-8%",
+      trendUp: false,
+    },
+  ];
+
   return (
     <div className="container mx-auto p-4 space-y-6 pb-16">
       <div>
@@ -75,10 +259,17 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className={cn(
-                  "text-xs",
-                  stat.trendUp ? "text-green-500" : "text-red-500"
-                )}>
+                <p
+                  className={cn(
+                    "flex items-center text-xs",
+                    stat.trendUp ? "text-green-500" : "text-red-500"
+                  )}
+                >
+                  {stat.trendUp ? (
+                    <TrendingUp className="mr-1 h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="mr-1 h-3 w-3" />
+                  )}
                   {stat.trend}
                 </p>
               </CardContent>
@@ -87,26 +278,173 @@ export default function AdminPage() {
         })}
       </div>
 
+      {/* Total Inventory Value Card */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            Total Inventory Value
+          </CardTitle>
+          <Box className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {formatCurrency(totalInventoryValue)}
+          </div>
+          <p className="flex items-center text-xs text-green-500">
+            <TrendingUp className="mr-1 h-3 w-3" />
+            +0%
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Total Profit Card */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div className="flex items-center">
+            <BarChart className="h-5 w-5 mr-2 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowProfit(!showProfit)}
+            className="h-8 w-8"
+          >
+            {showProfit ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                <line x1="2" x2="22" y1="2" y2="22" />
+              </svg>
+            )}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {showProfit ? formatCurrency(totalProfit) : "****"}
+          </div>
+          <div className="flex space-x-2 mt-4">
+            <Button
+              variant={profitTimeframe === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setProfitTimeframe("today")}
+              className="text-xs h-8 rounded-full"
+            >
+              Today
+            </Button>
+            <Button
+              variant={profitTimeframe === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setProfitTimeframe("week")}
+              className="text-xs h-8 rounded-full"
+            >
+              This Week
+            </Button>
+            <Button
+              variant={profitTimeframe === "15days" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setProfitTimeframe("15days")}
+              className="text-xs h-8 rounded-full"
+            >
+              15 Days
+            </Button>
+            <Button
+              variant={profitTimeframe === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setProfitTimeframe("month")}
+              className="text-xs h-8 rounded-full"
+            >
+              This Month
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Revenue Chart */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Revenue Over Time</CardTitle>
+          <div className="flex space-x-2">
+            <Button
+              variant={selectedTimeframe === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTimeframe("today")}
+              className="text-xs h-8"
+            >
+              Today
+            </Button>
+            <Button
+              variant={selectedTimeframe === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTimeframe("week")}
+              className="text-xs h-8"
+            >
+              This Week
+            </Button>
+            <Button
+              variant={selectedTimeframe === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTimeframe("month")}
+              className="text-xs h-8"
+            >
+              15 Days
+            </Button>
+            <Button
+              variant={selectedTimeframe === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTimeframe("all")}
+              className="text-xs h-8"
+            >
+              This Month
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p>Loading chart data...</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`${value} MAD`, "Revenue"]} />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </CardContent>
       </Card>

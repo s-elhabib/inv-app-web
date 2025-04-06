@@ -118,11 +118,7 @@ export async function getOrderById(id: string) {
     .from('orders')
     .select(`
       *,
-      client:clients(*),
-      order_items:order_items(
-        *,
-        product:products(*)
-      )
+      client:clients(*)
     `)
     .eq('id', id)
     .single();
@@ -132,14 +128,41 @@ export async function getOrderById(id: string) {
     return null;
   }
 
-  return data;
+  // Fetch order items (sales) separately
+  const { data: orderItems, error: itemsError } = await supabase
+    .from('sales')
+    .select(`
+      *,
+      product:products(*)
+    `)
+    .eq('order_id', id);
+
+  if (itemsError) {
+    console.error(`Error fetching order items for order ${id}:`, itemsError);
+  }
+
+  // Combine the data
+  return {
+    ...data,
+    order_items: orderItems || []
+  };
 }
 
-// Order Items
+// Order Items (stored in sales table)
 export async function createOrderItems(items: any[]) {
+  // Convert order_items format to sales table format
+  const salesItems = items.map(item => ({
+    order_id: item.order_id,
+    product_id: item.product_id,
+    client_id: item.client_id, // Use the client_id passed from the order
+    quantity: item.quantity,
+    unit_price: item.price,
+    amount: item.price * item.quantity
+  }));
+
   const { data, error } = await supabase
-    .from('order_items')
-    .insert(items)
+    .from('sales')
+    .insert(salesItems)
     .select();
 
   if (error) {

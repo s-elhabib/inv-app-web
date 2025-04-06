@@ -64,11 +64,11 @@ export default function OrderDetailPage({
     if (!order) return;
 
     try {
-      // Convert order items to CartItem format
+      // Convert order items (sales) to CartItem format
       const cartItems: CartItem[] = order.order_items.map((item: any) => ({
         id: item.product.id,
         name: item.product.name,
-        price: item.price,
+        price: item.unit_price || item.amount / item.quantity, // Use unit_price or calculate from amount
         quantity: item.quantity,
       }));
 
@@ -76,7 +76,7 @@ export default function OrderDetailPage({
       await generateAndDownloadInvoice(
         {
           id: order.id,
-          userId: order.user_id,
+          invoiceNumber: order.invoice_number,
           client: order.client,
           products: order.order_items.map((item: any) => ({
             productId: item.product_id,
@@ -193,11 +193,18 @@ export default function OrderDetailPage({
                       <div>
                         <p className="font-medium">{item.product.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity} x {item.price.toFixed(2)} MAD
+                          {item.quantity} x{" "}
+                          {(
+                            item.unit_price || item.amount / item.quantity
+                          ).toFixed(2)}{" "}
+                          MAD
                         </p>
                       </div>
                       <p className="font-medium">
-                        {(item.quantity * item.price).toFixed(2)} MAD
+                        {item.amount
+                          ? item.amount.toFixed(2)
+                          : (item.quantity * item.unit_price).toFixed(2)}{" "}
+                        MAD
                       </p>
                     </div>
                   ))

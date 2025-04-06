@@ -102,7 +102,7 @@ export default function OrdersHistoryPage() {
       await generateAndDownloadInvoice(
         {
           id: order.id,
-          userId: "1",
+          invoiceNumber: order.invoice_number,
           client: order.client,
           products: [],
           status: order.status,
@@ -131,7 +131,7 @@ export default function OrdersHistoryPage() {
     } for ${order.total_amount.toFixed(
       2
     )} MAD is ready. Thank you for your business!`;
-    
+
     shareViaWhatsApp(order.client.phone, message);
   };
 
@@ -159,7 +159,9 @@ export default function OrdersHistoryPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-4 pb-16">
-      <h1 className="text-2xl font-bold tracking-tight">Client Order History</h1>
+      <h1 className="text-2xl font-bold tracking-tight">
+        Client Order History
+      </h1>
 
       {/* Search */}
       <div className="relative">

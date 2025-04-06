@@ -166,7 +166,6 @@ export default function NewOrderPage() {
 
       // Create order in Supabase
       const orderData = {
-        user_id: "1", // Mock user ID
         client_id: selectedClient.id,
         status: "completed",
         total_amount: totalAmount,
@@ -183,6 +182,7 @@ export default function NewOrderPage() {
       const orderItems = cart.map((item) => ({
         order_id: savedOrder.id,
         product_id: item.id,
+        client_id: selectedClient.id, // Include client ID
         quantity: item.quantity,
         price: item.price,
       }));
@@ -192,7 +192,7 @@ export default function NewOrderPage() {
       // Create order object for invoice
       const order: Order = {
         id: savedOrder.id,
-        userId: "1",
+        invoiceNumber: savedOrder.invoice_number,
         client: selectedClient,
         products: cart.map((item) => ({
           productId: item.id,
@@ -208,9 +208,10 @@ export default function NewOrderPage() {
 
       // Share via WhatsApp if option is selected
       if (shareViaWhatsAppOption && selectedClient.phone) {
-        const message = `Hello ${selectedClient.name}, your invoice #${
-          savedOrder.id
-        } for ${totalAmount.toFixed(
+        const invoiceNumber = savedOrder.invoice_number || savedOrder.id;
+        const message = `Hello ${
+          selectedClient.name
+        }, your invoice #${invoiceNumber} for ${totalAmount.toFixed(
           2
         )} MAD is ready. Thank you for your business!`;
         shareViaWhatsApp(selectedClient.phone, message);

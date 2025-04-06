@@ -33,10 +33,8 @@ export const generateInvoiceHTML = (
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
 
-  // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.2; // 20% tax
-  const grandTotal = subtotal + tax;
+  // Calculate total (no tax for now)
+  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   // Generate HTML
   return `
@@ -114,13 +112,13 @@ export const generateInvoiceHTML = (
     <body>
       <div class="invoice-header">
         <div class="invoice-title">${translations.invoice}</div>
-        <div>#${order.id}</div>
+        <div>#${order.invoiceNumber || order.id}</div>
       </div>
 
       <div class="invoice-details">
         <div>
           <p><strong>${translations.date}:</strong> ${date}</p>
-          <p><strong>${translations.invoiceNumber}:</strong> #${order.id}</p>
+          <p><strong>${translations.invoiceNumber}:</strong> #${order.invoiceNumber || order.id}</p>
         </div>
         <div>
           <p><strong>${translations.client}:</strong> ${order.client?.name || 'N/A'}</p>
@@ -150,17 +148,9 @@ export const generateInvoiceHTML = (
 
       <div class="totals">
         <table>
-          <tr>
-            <th>${translations.subtotal}:</th>
-            <td>${subtotal.toFixed(2)} MAD</td>
-          </tr>
-          <tr>
-            <th>${translations.tax} (20%):</th>
-            <td>${tax.toFixed(2)} MAD</td>
-          </tr>
           <tr class="grand-total">
-            <th>${translations.grandTotal}:</th>
-            <td>${grandTotal.toFixed(2)} MAD</td>
+            <th>${translations.total}:</th>
+            <td>${total.toFixed(2)} MAD</td>
           </tr>
         </table>
       </div>
