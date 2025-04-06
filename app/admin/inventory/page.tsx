@@ -31,6 +31,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   getProducts,
+  getCategories,
   createProduct,
   deleteProduct,
   updateProduct,
@@ -41,131 +42,154 @@ interface Product {
   id: number;
   name: string;
   stock: number;
-  cost: number;
   price: number;
-  category: string;
+  sellingPrice?: number; // This is in the database schema
+  category?: string; // Virtual field for display only, not in database
+  category_id: string; // UUID format, not a number
   image?: string;
+  created_at?: string;
+  // Fields that don't exist in the database:
+  // - description
+  // - cost
+  // - updated_at
 }
 
-const inventory = [
-  {
-    id: 1,
-    name: "Moto",
-    stock: 10,
-    cost: 100,
-    price: 110,
-    category: "Toy",
-  },
-  {
-    id: 2,
-    name: "Tyej",
-    stock: 50,
-    cost: 100,
-    price: 120,
-    category: "Bakery",
-  },
-  {
-    id: 3,
-    name: "Ityy",
-    stock: 13,
-    cost: 5,
-    price: 16,
-    category: "Toy",
-    image: "/images/ityy.jpg",
-  },
-  {
-    id: 4,
-    name: "Tofita",
-    stock: 100,
-    cost: 22,
-    price: 23,
-    category: "Spices",
-  },
-];
+// We'll fetch products from the database instead of using static data
 
-const categories = [
-  "All",
-  "Bakery",
-  "Beverages",
-  "Dairy",
-  "Grains",
-  "Meat",
-  "Produce",
-  "Spices",
-  "Sweets",
-  "Toy",
-];
+interface Category {
+  id: string; // UUID format, not a number
+  name: string;
+  created_at?: string;
+}
 
 export default function InventoryPage() {
-  const [products, setProducts] = useState<Product[]>(inventory);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: "",
     category: "",
+    category_id: "", // Empty string for UUID
     stock: 0,
-    cost: 0,
     price: 0,
+    sellingPrice: 0,
+    // Fields removed as they don't exist in the database:
+    // - description
+    // - cost
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [sellDialogOpen, setSellDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null
   );
   const [sellQuantity, setSellQuantity] = useState(1);
+  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(
+    null
+  );
 
-  // Fetch products from Supabase
+  // Fetch products and categories from Supabase
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const productsData = await getProducts();
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ]);
+
+        // Set categories
+        setCategories(categoriesData);
+
         if (productsData && productsData.length > 0) {
           // Transform data to match our Product interface if needed
-          const formattedProducts = productsData.map((p) => ({
-            id: p.id,
-            name: p.name,
-            stock: p.stock || 0,
-            cost: p.cost || 0,
-            price: p.price || 0,
-            category: p.category || "Uncategorized",
-            image: p.image,
-          }));
+          const formattedProducts = productsData.map((p) => {
+            // Find the category name based on category_id
+            const category = categoriesData.find((c) => c.id === p.category_id);
+
+            return {
+              id: p.id,
+              name: p.name,
+              stock: p.stock || 0,
+              price: p.price || 0,
+              sellingPrice: p.sellingPrice || p.price || 0,
+              category: category?.name || "Uncategorized", // Use the category name from the categories table
+              category_id: p.category_id,
+              image: p.image,
+              created_at: p.created_at,
+              // Fields removed as they don't exist in the database:
+              // - description
+              // - cost
+              // - updated_at
+            };
+          });
           setProducts(formattedProducts);
         }
       } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to load products");
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load data");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   const handleAddProduct = async () => {
     try {
       // Validate required fields
-      if (!newProduct.name || !newProduct.category) {
-        toast.error("Name and category are required");
+      if (!newProduct.name) {
+        toast.error("Product name is required");
         return;
       }
 
+      if (!newProduct.category_id || newProduct.category_id === "") {
+        toast.error("Please select a category");
+        return;
+      }
+
+      // Only include fields that exist in the database schema
+      const productToSave = {
+        name: newProduct.name,
+        price: newProduct.price || 0,
+        sellingPrice: newProduct.sellingPrice || newProduct.price || 0,
+        stock: newProduct.stock || 0,
+        category_id: newProduct.category_id,
+        // Don't include fields that don't exist in the database:
+        // - description
+        // - cost
+      };
+
       // Save to Supabase
-      const savedProduct = await createProduct(newProduct);
+      const savedProduct = await createProduct(productToSave);
 
       if (savedProduct) {
-        // Add to local state
-        setProducts([...products, savedProduct as Product]);
+        // Find the category for display
+        const category = categories.find(
+          (c) => c.id === savedProduct.category_id
+        );
+
+        // Add to local state with the category name
+        const productWithCategory = {
+          ...savedProduct,
+          category: category?.name || "Uncategorized",
+        };
+
+        setProducts([...products, productWithCategory as Product]);
 
         // Reset form
         setNewProduct({
           name: "",
           category: "",
+          category_id: "", // Empty string for UUID
           stock: 0,
-          cost: 0,
           price: 0,
+          sellingPrice: 0,
+          // Fields removed as they don't exist in the database:
+          // - description
+          // - cost
         });
 
         toast.success("Product added successfully");
@@ -176,26 +200,133 @@ export default function InventoryPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setNewProduct({
       ...newProduct,
       [name]:
-        name === "stock" || name === "price" || name === "cost"
+        name === "stock" || name === "price" // cost field removed as it doesn't exist in the database
           ? parseFloat(value)
+          : name === "category_id"
+          ? value // Keep as string for UUID
           : value,
     });
+  };
+
+  const handleEditInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    if (!editingProduct) return;
+
+    const { name, value } = e.target;
+    setEditingProduct({
+      ...editingProduct,
+      [name]:
+        name === "stock" || name === "price" // cost field removed as it doesn't exist in the database
+          ? parseFloat(value)
+          : name === "category_id"
+          ? value // Keep as string for UUID
+          : value,
+    });
+  };
+
+  const openEditDialog = (productId: number) => {
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      setEditingProduct({ ...product });
+      setSelectedProductId(productId);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleEditProduct = async () => {
+    if (!editingProduct || !selectedProductId) return;
+
+    try {
+      // Validate required fields
+      if (!editingProduct.name) {
+        toast.error("Product name is required");
+        return;
+      }
+
+      if (!editingProduct.category_id || editingProduct.category_id === "") {
+        toast.error("Please select a category");
+        return;
+      }
+
+      // Only include fields that exist in the database schema
+      const productToUpdate = {
+        name: editingProduct.name,
+        price: editingProduct.price || 0,
+        sellingPrice: editingProduct.sellingPrice || editingProduct.price || 0,
+        stock: editingProduct.stock || 0,
+        category_id: editingProduct.category_id,
+        // Don't include fields that don't exist in the database:
+        // - description
+        // - cost
+      };
+
+      // Update in Supabase
+      const updatedProduct = await updateProduct(
+        selectedProductId,
+        productToUpdate
+      );
+
+      if (updatedProduct) {
+        // Find the category for display
+        const category = categories.find(
+          (c) => c.id === updatedProduct.category_id
+        );
+
+        // Update local state with the category name
+        const productWithCategory = {
+          ...updatedProduct,
+          category: category?.name || "Uncategorized",
+        };
+
+        setProducts(
+          products.map((p) =>
+            p.id === selectedProductId ? (productWithCategory as Product) : p
+          )
+        );
+
+        toast.success("Product updated successfully");
+        setEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error("Failed to update product");
+    }
+  };
+
+  // Get category name for display and filtering
+  const getCategoryName = (categoryId?: number) => {
+    if (!categoryId) return "Uncategorized";
+    const category = categories.find((c) => c.id === categoryId);
+    return category?.name || "Uncategorized";
   };
 
   const filteredProducts = products
     .filter(
       (product) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+        getCategoryName(product.category_id)
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        (product.description || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
     )
     .filter(
       (product) =>
-        selectedCategory === "All" || product.category === selectedCategory
+        selectedCategory === "All" ||
+        getCategoryName(product.category_id) === selectedCategory
     );
 
   const openSellDialog = (productId: number) => {
@@ -295,14 +426,22 @@ export default function InventoryPage() {
       <Tabs defaultValue="All" className="w-full">
         <div className="overflow-x-auto pb-2">
           <TabsList className="w-full justify-start">
+            <TabsTrigger
+              key="All"
+              value="All"
+              onClick={() => setSelectedCategory("All")}
+              className="px-4 py-2"
+            >
+              All
+            </TabsTrigger>
             {categories.map((category) => (
               <TabsTrigger
-                key={category}
-                value={category}
-                onClick={() => setSelectedCategory(category)}
+                key={category.id}
+                value={category.name}
+                onClick={() => setSelectedCategory(category.name)}
                 className="px-4 py-2"
               >
-                {category}
+                {category.name}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -324,12 +463,16 @@ export default function InventoryPage() {
                     <div>
                       <div className="font-medium text-lg">{product.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {product.category}
+                        {getCategoryName(product.category_id)}
                       </div>
                       <div className="mt-2">
-                        <div className="text-sm">Cost: {product.cost} MAD</div>
+                        {/* Cost field removed as it doesn't exist in the database */}
+                        <div className="text-sm">
+                          Price: {product.price} MAD
+                        </div>
                         <div className="text-sm text-orange-500">
-                          Sell: {product.price} MAD
+                          Selling Price: {product.sellingPrice || product.price}{" "}
+                          MAD
                         </div>
                       </div>
                       <div className="mt-1 text-sm">Stock: {product.stock}</div>
@@ -343,7 +486,12 @@ export default function InventoryPage() {
                       >
                         Sell
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditDialog(product.id)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
@@ -380,7 +528,7 @@ export default function InventoryPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
@@ -388,20 +536,29 @@ export default function InventoryPage() {
                 value={newProduct.name}
                 onChange={handleInputChange}
                 className="col-span-3"
+                placeholder="Product name"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
-                Category
+              <Label htmlFor="category_id" className="text-right">
+                Category <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="category"
-                name="category"
-                value={newProduct.category}
+              <select
+                id="category_id"
+                name="category_id"
+                value={newProduct.category_id || ""}
                 onChange={handleInputChange}
-                className="col-span-3"
-              />
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </div>
+            {/* Description field removed as it doesn't exist in the database */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="stock" className="text-right">
                 Stock
@@ -413,25 +570,13 @@ export default function InventoryPage() {
                 value={newProduct.stock}
                 onChange={handleInputChange}
                 className="col-span-3"
+                min="0"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="cost" className="text-right">
-                Cost
-              </Label>
-              <Input
-                id="cost"
-                name="cost"
-                type="number"
-                step="0.01"
-                value={newProduct.cost}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
+            {/* Cost field removed as it doesn't exist in the database */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="price" className="text-right">
-                Selling Price
+                Price
               </Label>
               <Input
                 id="price"
@@ -441,11 +586,125 @@ export default function InventoryPage() {
                 value={newProduct.price}
                 onChange={handleInputChange}
                 className="col-span-3"
+                min="0"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="sellingPrice" className="text-right">
+                Selling Price
+              </Label>
+              <Input
+                id="sellingPrice"
+                name="sellingPrice"
+                type="number"
+                step="0.01"
+                value={newProduct.sellingPrice}
+                onChange={handleInputChange}
+                className="col-span-3"
+                min="0"
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleAddProduct}>Add Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>Update the product details.</DialogDescription>
+          </DialogHeader>
+          {editingProduct && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-name" className="text-right">
+                  Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="edit-name"
+                  name="name"
+                  value={editingProduct.name}
+                  onChange={handleEditInputChange}
+                  className="col-span-3"
+                  placeholder="Product name"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-category_id" className="text-right">
+                  Category <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="edit-category_id"
+                  name="category_id"
+                  value={editingProduct.category_id || ""}
+                  onChange={handleEditInputChange}
+                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Description field removed as it doesn't exist in the database */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-stock" className="text-right">
+                  Stock
+                </Label>
+                <Input
+                  id="edit-stock"
+                  name="stock"
+                  type="number"
+                  value={editingProduct.stock}
+                  onChange={handleEditInputChange}
+                  className="col-span-3"
+                  min="0"
+                />
+              </div>
+              {/* Cost field removed as it doesn't exist in the database */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-price" className="text-right">
+                  Price
+                </Label>
+                <Input
+                  id="edit-price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  value={editingProduct.price}
+                  onChange={handleEditInputChange}
+                  className="col-span-3"
+                  min="0"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-sellingPrice" className="text-right">
+                  Selling Price
+                </Label>
+                <Input
+                  id="edit-sellingPrice"
+                  name="sellingPrice"
+                  type="number"
+                  step="0.01"
+                  value={editingProduct.sellingPrice}
+                  onChange={handleEditInputChange}
+                  className="col-span-3"
+                  min="0"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditProduct}>Update Product</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

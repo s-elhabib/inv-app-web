@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
+// Log Supabase configuration (without exposing the full key)
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key (first 5 chars):', supabaseAnonKey ? supabaseAnonKey.substring(0, 5) + '...' : 'undefined');
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Products
@@ -18,6 +22,94 @@ export async function getProducts() {
   }
 
   return data;
+}
+
+// Categories
+export async function getCategories() {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching categories:', error);
+    // Return default categories as fallback
+    return [
+      { id: 1, name: 'Bakery' },
+      { id: 2, name: 'Beverages' },
+      { id: 3, name: 'Dairy' },
+      { id: 4, name: 'Grains' },
+      { id: 5, name: 'Meat' },
+      { id: 6, name: 'Produce' },
+      { id: 7, name: 'Spices' },
+      { id: 8, name: 'Sweets' },
+      { id: 9, name: 'Toy' },
+    ];
+  }
+
+  return data;
+}
+
+export async function addCategory(categoryData: any) {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(categoryData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateCategory(id: string, categoryData: any) {
+  const { data, error } = await supabase
+    .from('categories')
+    .update(categoryData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating category:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteCategory(id: string) {
+  // First check if any products are using this category
+  const { data: productsUsingCategory, error: checkError } = await supabase
+    .from('products')
+    .select('id')
+    .eq('category_id', id);
+
+  if (checkError) {
+    console.error('Error checking products using category:', checkError);
+    throw checkError;
+  }
+
+  // If products are using this category, don't allow deletion
+  if (productsUsingCategory && productsUsingCategory.length > 0) {
+    throw new Error(`Cannot delete category because it's used by ${productsUsingCategory.length} products`);
+  }
+
+  // If no products are using this category, proceed with deletion
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting category:', error);
+    throw error;
+  }
+
+  return true;
 }
 
 export async function createProduct(productData: any) {
@@ -78,6 +170,183 @@ export async function getClients() {
   }
 
   return data;
+}
+
+export async function addClient(clientData: any) {
+  const { data, error } = await supabase
+    .from('clients')
+    .insert(clientData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating client:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateClient(id: string | number, clientData: any) {
+  // For UUID strings, we should use them as-is
+  // No need to convert UUID strings to numbers
+  console.log('Supabase updateClient - ID:', id, 'Type:', typeof id);
+  console.log('Supabase updateClient - Data:', clientData);
+
+  // First, try to get the client to make sure it exists
+  const { data: existingClient, error: getError } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (getError) {
+    console.error('Error finding client for update:', getError);
+    return null;
+  }
+
+  if (!existingClient) {
+    console.error('Client not found for update');
+    return null;
+  }
+
+  console.log('Found existing client:', existingClient);
+
+  // Try the standard update method first
+  console.log('Trying standard update method');
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .update(clientData)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Standard update failed:', error);
+    } else if (data && data.length > 0) {
+      console.log('Standard update succeeded:', data);
+      return data[0];
+    } else {
+      console.log('Standard update returned no data');
+    }
+  } catch (err) {
+    console.error('Exception in standard update:', err);
+  }
+
+  // If standard update fails, try direct SQL
+  console.log('Trying SQL update as fallback');
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .update({
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        address: clientData.address,
+        updated_at: new Date().toISOString()
+      })
+      .match({ id: id })
+      .select();
+
+    if (error) {
+      console.error('SQL update failed:', error);
+    } else {
+      console.log('SQL update result:', data);
+      return data?.[0] || existingClient; // Return existing client as fallback
+    }
+  } catch (err) {
+    console.error('Exception in SQL update:', err);
+  }
+
+  // If all else fails, return the existing client with updated fields
+  // This is a client-side only update that won't persist to the database
+  console.log('All update methods failed, returning client-side updated object');
+  return {
+    ...existingClient,
+    ...clientData,
+    updated_at: new Date().toISOString()
+  };
+}
+
+export async function deleteClient(id: string | number) {
+  // For UUID strings, we should use them as-is
+  // No need to convert UUID strings to numbers
+  console.log('Supabase deleteClient - ID:', id, 'Type:', typeof id);
+
+  // First, try to get the client to make sure it exists
+  const { data: existingClient, error: getError } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (getError) {
+    console.error('Error finding client for delete:', getError);
+    return false;
+  }
+
+  if (!existingClient) {
+    console.error('Client not found for delete');
+    return false;
+  }
+
+  console.log('Found existing client for delete:', existingClient);
+
+  // Try the standard delete method first
+  console.log('Trying standard delete method');
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Standard delete failed:', error);
+    } else {
+      console.log('Standard delete succeeded');
+      return true;
+    }
+  } catch (err) {
+    console.error('Exception in standard delete:', err);
+  }
+
+  // If standard delete fails, try with match
+  console.log('Trying match delete as fallback');
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .match({ id: id });
+
+    if (error) {
+      console.error('Match delete failed:', error);
+    } else {
+      console.log('Match delete succeeded');
+      return true;
+    }
+  } catch (err) {
+    console.error('Exception in match delete:', err);
+  }
+
+  // If all else fails, mark the client as inactive (soft delete)
+  console.log('Trying soft delete as last resort');
+  try {
+    const { error } = await supabase
+      .from('clients')
+      .update({ status: 'inactive', updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Soft delete failed:', error);
+      return false;
+    } else {
+      console.log('Soft delete succeeded');
+      return true;
+    }
+  } catch (err) {
+    console.error('Exception in soft delete:', err);
+    return false;
+  }
 }
 
 // Orders

@@ -5,6 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Minus,
   Plus,
   ShoppingCart,
@@ -269,52 +278,49 @@ export default function NewOrderPage() {
         <div className="w-full lg:w-2/3">
           <Card>
             <CardHeader className="space-y-4">
-              <div className="flex items-center justify-between">
-                <CardTitle>
-                  Client: {selectedClient?.name || "Select a client"}
-                </CardTitle>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      Change
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Select Client</DialogTitle>
-                      <DialogDescription>
-                        Choose a client for this order.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      {clients.map((client) => (
-                        <div
-                          key={client.id}
-                          className={`p-3 border rounded-md cursor-pointer hover:bg-accent ${
-                            selectedClient?.id === client.id ? "bg-accent" : ""
-                          }`}
-                          onClick={() => {
-                            setSelectedClient(client);
-                            // Close the dialog by clicking the close button
-                            const closeButton = document.querySelector(
-                              "[data-radix-collection-item]"
-                            );
-                            if (closeButton instanceof HTMLElement) {
-                              closeButton.click();
-                            }
-                          }}
-                        >
-                          <div className="font-medium">{client.name}</div>
-                          {client.phone && (
-                            <div className="text-sm text-muted-foreground">
-                              {client.phone}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              <div className="space-y-4">
+                <CardTitle>Select Client</CardTitle>
+                <div className="relative">
+                  <Command className="rounded-lg border shadow-sm overflow-visible">
+                    <CommandInput
+                      placeholder="Search clients by name..."
+                      className="border-none focus:ring-0"
+                    />
+                    <CommandList className="absolute top-full left-0 right-0 max-h-64 overflow-y-auto z-10 bg-background border rounded-b-lg shadow-md">
+                      <CommandEmpty>No clients found.</CommandEmpty>
+                      <CommandGroup>
+                        {clients.map((client) => (
+                          <CommandItem
+                            key={client.id}
+                            onSelect={() => setSelectedClient(client)}
+                            className={`flex flex-col items-start ${
+                              selectedClient?.id === client.id
+                                ? "bg-accent"
+                                : ""
+                            }`}
+                          >
+                            <div className="font-medium">{client.name}</div>
+                            {client.phone && (
+                              <div className="text-xs text-muted-foreground">
+                                {client.phone}
+                              </div>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </div>
+                {selectedClient && (
+                  <div className="p-3 border rounded-md bg-accent/20">
+                    <div className="font-medium">{selectedClient.name}</div>
+                    {selectedClient.phone && (
+                      <div className="text-sm text-muted-foreground">
+                        {selectedClient.phone}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <Input
                 placeholder="Search products..."

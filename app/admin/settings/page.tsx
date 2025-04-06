@@ -19,14 +19,20 @@ import {
   Settings,
   Moon,
   Sun,
+  UserPlus,
+  Loader2,
+  FolderPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+// No need to import client functions anymore
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  // Only need mounted state for theme
 
   // Only show theme toggle after component mounts to avoid hydration mismatch
   useEffect(() => {
@@ -109,6 +115,27 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Data Management</CardTitle>
+            <CardDescription>Manage your business data</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link href="/admin/clients">
+              <Button className="w-full mb-2">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Manage Clients
+              </Button>
+            </Link>
+            <Link href="/admin/categories">
+              <Button className="w-full">
+                <FolderPlus className="mr-2 h-4 w-4" />
+                Manage Categories
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Security</CardTitle>
             <CardDescription>Manage your security settings</CardDescription>
           </CardHeader>
@@ -131,7 +158,7 @@ export default function SettingsPage() {
         <Link href="/admin" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Home className="h-5 w-5" />
             <span className="text-xs">Dashboard</span>
@@ -140,7 +167,7 @@ export default function SettingsPage() {
         <Link href="/admin/new-order" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs">New Order</span>
@@ -149,7 +176,7 @@ export default function SettingsPage() {
         <Link href="/admin/inventory" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Package className="h-5 w-5" />
             <span className="text-xs">Inventory</span>
@@ -158,7 +185,7 @@ export default function SettingsPage() {
         <Link href="/admin/orders" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <History className="h-5 w-5" />
             <span className="text-xs">Orders History</span>
@@ -167,7 +194,7 @@ export default function SettingsPage() {
         <Link href="/admin/settings" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none bg-muted"
+            className="flex flex-col h-full w-full rounded-none text-primary"
           >
             <Settings className="h-5 w-5" />
             <span className="text-xs">Settings</span>
