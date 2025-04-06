@@ -1,28 +1,33 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { login } = useAuth();
   const router = useRouter();
+
+  const fillDemoCredentials = () => {
+    setEmail("admin@example.com");
+    setPassword("password123");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
-      toast.success('Successfully logged in');
-      router.push('/admin');
+      toast.success("Successfully logged in");
+      router.push("/admin");
     } catch (error) {
-      toast.error('Failed to login');
+      toast.error("Failed to login");
     }
   };
 
@@ -62,6 +67,15 @@ export default function LoginPage() {
             Sign In
           </Button>
         </form>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={fillDemoCredentials}
+            className="text-sm text-primary hover:underline"
+          >
+            Use demo credentials
+          </button>
+        </div>
       </Card>
     </div>
   );
