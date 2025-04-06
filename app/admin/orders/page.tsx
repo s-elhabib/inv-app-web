@@ -311,7 +311,7 @@ export default function OrdersHistoryPage() {
         <Link href="/admin" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Home className="h-5 w-5" />
             <span className="text-xs">Dashboard</span>
@@ -320,7 +320,7 @@ export default function OrdersHistoryPage() {
         <Link href="/admin/new-order" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs">New Order</span>
@@ -329,7 +329,7 @@ export default function OrdersHistoryPage() {
         <Link href="/admin/inventory" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Package className="h-5 w-5" />
             <span className="text-xs">Inventory</span>
@@ -338,7 +338,7 @@ export default function OrdersHistoryPage() {
         <Link href="/admin/orders" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none bg-muted"
+            className="flex flex-col h-full w-full rounded-none text-primary"
           >
             <History className="h-5 w-5" />
             <span className="text-xs">Orders History</span>
@@ -347,7 +347,7 @@ export default function OrdersHistoryPage() {
         <Link href="/admin/settings" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Settings className="h-5 w-5" />
             <span className="text-xs">Settings</span>

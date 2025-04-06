@@ -11,10 +11,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Home, ShoppingBag, Package, History, Settings } from "lucide-react";
+import {
+  Home,
+  ShoppingBag,
+  Package,
+  History,
+  Settings,
+  Moon,
+  Sun,
+} from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Only show theme toggle after component mounts to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   return (
     <div className="container mx-auto p-4 space-y-6 pb-16">
       <div>
@@ -40,6 +57,34 @@ export default function SettingsPage() {
               <Input id="email" type="email" defaultValue="john@example.com" />
             </div>
             <Button>Save Changes</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>
+              Customize how the application looks
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {mounted && theme === "dark" ? (
+                  <Moon className="h-5 w-5" />
+                ) : (
+                  <Sun className="h-5 w-5" />
+                )}
+                <Label htmlFor="theme-toggle">Dark Mode</Label>
+              </div>
+              <Switch
+                id="theme-toggle"
+                checked={mounted && theme === "dark"}
+                onCheckedChange={(checked) => {
+                  setTheme(checked ? "dark" : "light");
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
 

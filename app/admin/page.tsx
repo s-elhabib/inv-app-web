@@ -240,56 +240,56 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pb-16">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back to your dashboard</p>
+    <div className="container mx-auto p-4 space-y-6 pb-16 bg-background">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p
-                  className={cn(
-                    "flex items-center text-xs",
-                    stat.trendUp ? "text-green-500" : "text-red-500"
-                  )}
-                >
-                  {stat.trendUp ? (
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3" />
-                  )}
-                  {stat.trend}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">Admin Dashboard</h2>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        {stats.map((stat, index) => (
+          <Card key={index} className="overflow-hidden shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-start">
+                <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
+                  <stat.icon className="h-6 w-6 text-accent-foreground" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stat.value}</div>
+              <p className="text-muted-foreground mb-2">{stat.title}</p>
+              <p
+                className={cn(
+                  "flex items-center text-xs",
+                  stat.trendUp ? "text-green-500" : "text-red-500"
+                )}
+              >
+                {stat.trendUp ? (
+                  <TrendingUp className="mr-1 h-3 w-3" />
+                ) : (
+                  <TrendingDown className="mr-1 h-3 w-3" />
+                )}
+                {stat.trend}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Total Inventory Value Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Total Inventory Value
-          </CardTitle>
-          <Box className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+      <Card className="overflow-hidden shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-start">
+            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
+              <Box className="h-6 w-6 text-accent-foreground" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold mb-1">
             {formatCurrency(totalInventoryValue)}
           </div>
+          <p className="text-muted-foreground mb-2">Total Inventory Value</p>
           <p className="flex items-center text-xs text-green-500">
             <TrendingUp className="mr-1 h-3 w-3" />
             +0%
@@ -298,56 +298,56 @@ export default function AdminPage() {
       </Card>
 
       {/* Total Profit Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center">
-            <BarChart className="h-5 w-5 mr-2 text-muted-foreground" />
-            <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
+      <Card className="overflow-hidden shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
+              <BarChart className="h-6 w-6 text-accent-foreground" />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowProfit(!showProfit)}
+              className="h-8 w-8"
+            >
+              {showProfit ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                  <line x1="2" x2="22" y1="2" y2="22" />
+                </svg>
+              )}
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowProfit(!showProfit)}
-            className="h-8 w-8"
-          >
-            {showProfit ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                <line x1="2" x2="22" y1="2" y2="22" />
-              </svg>
-            )}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-bold mb-1">
             {showProfit ? formatCurrency(totalProfit) : "****"}
           </div>
-          <div className="flex space-x-2 mt-4">
+          <p className="text-muted-foreground mb-4">Total Profit</p>
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={profitTimeframe === "today" ? "default" : "outline"}
               size="sm"
@@ -454,7 +454,7 @@ export default function AdminPage() {
         <Link href="/admin" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none bg-muted"
+            className="flex flex-col h-full w-full rounded-none text-primary"
           >
             <Home className="h-5 w-5" />
             <span className="text-xs">Dashboard</span>
@@ -463,7 +463,7 @@ export default function AdminPage() {
         <Link href="/admin/new-order" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <ShoppingBag className="h-5 w-5" />
             <span className="text-xs">New Order</span>
@@ -472,7 +472,7 @@ export default function AdminPage() {
         <Link href="/admin/inventory" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Package className="h-5 w-5" />
             <span className="text-xs">Inventory</span>
@@ -481,7 +481,7 @@ export default function AdminPage() {
         <Link href="/admin/orders" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <History className="h-5 w-5" />
             <span className="text-xs">Orders History</span>
@@ -490,7 +490,7 @@ export default function AdminPage() {
         <Link href="/admin/settings" className="w-full">
           <Button
             variant="ghost"
-            className="flex flex-col h-full w-full rounded-none"
+            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
           >
             <Settings className="h-5 w-5" />
             <span className="text-xs">Settings</span>
