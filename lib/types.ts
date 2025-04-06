@@ -58,7 +58,7 @@ export interface SupplierOrder {
   supplier_id: string;
   supplier?: Supplier;
   invoice_number?: string;
-  invoice_image?: string;
+  invoice_images?: string[];
   total_amount: number;
   status: 'pending' | 'received' | 'cancelled';
   created_at: string;

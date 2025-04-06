@@ -78,7 +78,7 @@ export default function NewSupplierOrderPage() {
   );
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [invoiceImage, setInvoiceImage] = useState<string | null>(null);
+  const [invoiceImages, setInvoiceImages] = useState<string[]>([]);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   // We've integrated the product selection directly into the page
   const [searchQuery, setSearchQuery] = useState("");
@@ -115,16 +115,32 @@ export default function NewSupplierOrderPage() {
     fetchData();
   }, []);
 
-  // Handle file input change
+  // Handle file input change for multiple images
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setInvoiceImage(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // Convert FileList to Array
+      const filesArray = Array.from(files);
+
+      // Process each file
+      filesArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setInvoiceImages((prev) => [
+              ...prev,
+              event.target?.result as string,
+            ]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
+  };
+
+  // Remove a specific image
+  const removeImage = (index: number) => {
+    setInvoiceImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Handle taking a photo (for mobile)
@@ -316,7 +332,7 @@ export default function NewSupplierOrderPage() {
       const orderData = {
         supplier_id: selectedSupplier.id,
         invoice_number: invoiceNumber,
-        invoice_image: invoiceImage,
+        invoice_images: invoiceImages.length > 0 ? invoiceImages : null,
         total_amount: totalAmount,
         status: "pending",
         notes: notes,
@@ -435,9 +451,14 @@ export default function NewSupplierOrderPage() {
               />
             </div>
 
-            {/* Invoice Image */}
+            {/* Invoice Images */}
             <div className="space-y-2">
-              <Label>Invoice Image</Label>
+              <div className="flex justify-between items-center">
+                <Label>Invoice Images</Label>
+                <span className="text-xs text-muted-foreground">
+                  {invoiceImages.length} image(s)
+                </span>
+              </div>
               <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 bg-muted/50">
                 <input
                   type="file"
@@ -446,34 +467,57 @@ export default function NewSupplierOrderPage() {
                   className="hidden"
                   ref={fileInputRef}
                   capture="environment"
+                  multiple
                 />
 
-                {invoiceImage ? (
-                  <div className="relative w-full">
-                    <img
-                      src={invoiceImage}
-                      alt="Invoice"
-                      className="w-full h-auto rounded-md"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8"
-                      onClick={() => setInvoiceImage(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                {invoiceImages.length > 0 ? (
+                  <div className="w-full space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {invoiceImages.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image}
+                            alt={`Invoice ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-md border"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            Image {index + 1}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add more button */}
+                      <div
+                        className="border-2 border-dashed rounded-md flex items-center justify-center h-32 cursor-pointer hover:bg-accent/10 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="flex flex-col items-center">
+                          <Plus className="h-8 w-8 text-muted-foreground mb-1" />
+                          <p className="text-xs text-muted-foreground">
+                            Add More
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center">
                     <Upload className="h-10 w-10 text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground mb-4">
-                      Drag and drop an image or click to upload
+                      Drag and drop images or click to upload
                     </p>
                     <div className="flex gap-2">
                       <Button onClick={() => fileInputRef.current?.click()}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload Image
+                        Upload Images
                       </Button>
                       <Button onClick={handleTakePhoto} variant="outline">
                         <Camera className="mr-2 h-4 w-4" />

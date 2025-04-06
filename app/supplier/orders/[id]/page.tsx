@@ -67,6 +67,7 @@ export default function OrderDetailPage({
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrder();
@@ -249,30 +250,83 @@ export default function OrderDetailPage({
               </div>
             )}
 
-            {order.invoice_image && (
+            {/* Handle both legacy single image and new multiple images */}
+            {(order.invoice_image ||
+              (order.invoice_images && order.invoice_images.length > 0)) && (
               <div className="mt-4 print:hidden">
-                <p className="text-sm font-medium mb-2">Invoice Image</p>
-                <div
-                  className="relative border rounded-md overflow-hidden"
-                  style={{ maxHeight: "200px" }}
-                >
-                  <img
-                    src={order.invoice_image}
-                    alt="Invoice"
-                    className="w-full h-auto object-cover cursor-pointer"
-                    onClick={() => setShowImageDialog(true)}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setShowImageDialog(true)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Full Image
-                    </Button>
-                  </div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-medium">Invoice Images</p>
+                  <span className="text-xs text-muted-foreground">
+                    {order.invoice_images ? order.invoice_images.length : 1}{" "}
+                    image(s)
+                  </span>
                 </div>
+
+                {order.invoice_image ? (
+                  // Legacy single image display
+                  <div
+                    className="relative border rounded-md overflow-hidden"
+                    style={{ maxHeight: "200px" }}
+                  >
+                    <img
+                      src={order.invoice_image}
+                      alt="Invoice"
+                      className="w-full h-auto object-cover cursor-pointer"
+                      onClick={() => {
+                        setSelectedImage(order.invoice_image);
+                        setShowImageDialog(true);
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedImage(order.invoice_image);
+                          setShowImageDialog(true);
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Full Image
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Multiple images display
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {order.invoice_images.map(
+                      (image: string, index: number) => (
+                        <div
+                          key={index}
+                          className="relative border rounded-md overflow-hidden group cursor-pointer"
+                          onClick={() => {
+                            setSelectedImage(image);
+                            setShowImageDialog(true);
+                          }}
+                        >
+                          <img
+                            src={image}
+                            alt={`Invoice ${index + 1}`}
+                            className="w-full h-24 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="h-8 text-xs"
+                            >
+                              <Eye className="mr-1 h-3 w-3" />
+                              View
+                            </Button>
+                          </div>
+                          <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                            {index + 1}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -448,7 +502,7 @@ export default function OrderDetailPage({
       </Dialog>
 
       {/* Invoice Image Dialog */}
-      {order.invoice_image && (
+      {showImageDialog && selectedImage && (
         <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
@@ -456,7 +510,7 @@ export default function OrderDetailPage({
             </DialogHeader>
             <div className="py-4">
               <img
-                src={order.invoice_image}
+                src={selectedImage}
                 alt="Invoice"
                 className="w-full h-auto rounded-md"
               />
@@ -464,12 +518,15 @@ export default function OrderDetailPage({
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setShowImageDialog(false)}
+                onClick={() => {
+                  setShowImageDialog(false);
+                  setSelectedImage(null);
+                }}
               >
                 Close
               </Button>
               <a
-                href={order.invoice_image}
+                href={selectedImage}
                 download={`invoice-${order.id.substring(0, 8)}`}
                 target="_blank"
                 rel="noopener noreferrer"
