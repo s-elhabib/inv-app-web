@@ -44,11 +44,62 @@ export default function AdminPage() {
   const totalProducts = products.length;
   const totalOrders = orders.length;
 
-  // Calculate total revenue
-  const totalRevenue = orders.reduce(
-    (sum, order) => sum + (order.total_amount || 0),
-    0
-  );
+  // Calculate revenue based on timeframe
+  const [revenueTimeframe, setRevenueTimeframe] = useState("today");
+
+  // Calculate revenue for different timeframes
+  const calculateRevenueForTimeframe = (timeframe: string) => {
+    let filteredOrders = [];
+    const now = new Date();
+
+    // Filter orders based on timeframe
+    switch (timeframe) {
+      case "today":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+        });
+        break;
+      case "week":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 7)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "15days":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 15)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "month":
+        filteredOrders = orders.filter((order) => {
+          const orderDate = parseISO(order.created_at);
+          return (
+            orderDate >= startOfDay(subDays(now, 30)) &&
+            orderDate <= endOfDay(now)
+          );
+        });
+        break;
+      case "all":
+      default:
+        filteredOrders = orders;
+    }
+
+    // Calculate total revenue for filtered orders
+    return filteredOrders.reduce(
+      (sum, order) => sum + (order.total_amount || 0),
+      0
+    );
+  };
+
+  const totalRevenue = calculateRevenueForTimeframe(revenueTimeframe);
 
   // Calculate inventory value
   const totalInventoryValue = products.reduce((sum, product) => {
@@ -57,7 +108,7 @@ export default function AdminPage() {
 
   // Calculate profit based on timeframe
   const [profitTimeframe, setProfitTimeframe] = useState("today");
-  const [showProfit, setShowProfit] = useState(true);
+  const [showProfit, setShowProfit] = useState(false);
 
   // Calculate profit for different timeframes
   const calculateProfitForTimeframe = (timeframe: string) => {
@@ -228,7 +279,9 @@ export default function AdminPage() {
       value: formatCurrency(totalRevenue),
       icon: DollarSign,
       trend: "-8%",
-      trendUp: false,
+      // trendUp: false,
+      timeframe: revenueTimeframe,
+      setTimeframe: setRevenueTimeframe,
     },
     {
       title: "Total Orders",
@@ -260,19 +313,66 @@ export default function AdminPage() {
               </div>
               <div className="text-3xl font-bold mb-1">{stat.value}</div>
               <p className="text-muted-foreground mb-2">{stat.title}</p>
-              <p
-                className={cn(
-                  "flex items-center text-xs",
-                  stat.trendUp ? "text-green-500" : "text-red-500"
-                )}
-              >
-                {stat.trendUp ? (
-                  <TrendingUp className="mr-1 h-3 w-3" />
-                ) : (
-                  <TrendingDown className="mr-1 h-3 w-3" />
-                )}
-                {stat.trend}
-              </p>
+              {stat.setTimeframe ? (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <Button
+                    variant={stat.timeframe === "today" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => stat.setTimeframe("today")}
+                    className="text-xs h-7 rounded-full"
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant={stat.timeframe === "week" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => stat.setTimeframe("week")}
+                    className="text-xs h-7 rounded-full"
+                  >
+                    This Week
+                  </Button>
+                  <Button
+                    variant={
+                      stat.timeframe === "15days" ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => stat.setTimeframe("15days")}
+                    className="text-xs h-7 rounded-full"
+                  >
+                    15 Days
+                  </Button>
+                  <Button
+                    variant={stat.timeframe === "month" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => stat.setTimeframe("month")}
+                    className="text-xs h-7 rounded-full"
+                  >
+                    This Month
+                  </Button>
+                  <Button
+                    variant={stat.timeframe === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => stat.setTimeframe("all")}
+                    className="text-xs h-7 rounded-full"
+                  >
+                    All Time
+                  </Button>
+                </div>
+              ) : (
+                <p
+                  className={cn(
+                    "flex items-center text-xs",
+                    stat.trendUp ? "text-green-500" : "text-red-500"
+                  )}
+                >
+                  {stat.trendUp ? (
+                    <TrendingUp className="mr-1 h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="mr-1 h-3 w-3" />
+                  )}
+                  {stat.trend}
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -289,10 +389,11 @@ export default function AdminPage() {
           <div className="text-3xl font-bold mb-1">
             {formatCurrency(totalInventoryValue)}
           </div>
-          <p className="text-muted-foreground mb-2">Total Inventory Value</p>
+          <p className="text-muted-foreground mb-2">
+            Total Inventory Value(RAS LML)
+          </p>
           <p className="flex items-center text-xs text-green-500">
-            <TrendingUp className="mr-1 h-3 w-3" />
-            +0%
+            {/* <TrendingUp className="mr-1 h-3 w-3" /> */}
           </p>
         </CardContent>
       </Card>

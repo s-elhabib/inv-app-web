@@ -81,13 +81,34 @@ export default function OrdersHistoryPage() {
 
     // Filter by date range
     let matchesDateRange = true;
-    if (startDate) {
+    if (startDate || endDate) {
       const orderDate = new Date(order.created_at);
-      matchesDateRange = orderDate >= startDate;
-    }
-    if (endDate) {
-      const orderDate = new Date(order.created_at);
-      matchesDateRange = matchesDateRange && orderDate <= endDate;
+      const orderDateOnly = new Date(
+        orderDate.getFullYear(),
+        orderDate.getMonth(),
+        orderDate.getDate()
+      );
+
+      if (startDate) {
+        const startDateOnly = new Date(
+          startDate.getFullYear(),
+          startDate.getMonth(),
+          startDate.getDate()
+        );
+        matchesDateRange = orderDateOnly >= startDateOnly;
+      }
+
+      if (endDate) {
+        const endDateOnly = new Date(
+          endDate.getFullYear(),
+          endDate.getMonth(),
+          endDate.getDate()
+        );
+        // Add one day to end date to include the entire end date
+        const endDatePlusOne = new Date(endDateOnly);
+        endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+        matchesDateRange = matchesDateRange && orderDateOnly < endDatePlusOne;
+      }
     }
 
     return matchesSearch && matchesDateRange;

@@ -281,46 +281,57 @@ export default function NewOrderPage() {
               <div className="space-y-4">
                 <CardTitle>Select Client</CardTitle>
                 <div className="relative">
-                  <Command className="rounded-lg border shadow-sm overflow-visible">
-                    <CommandInput
-                      placeholder="Search clients by name..."
-                      className="border-none focus:ring-0"
-                    />
-                    <CommandList className="absolute top-full left-0 right-0 max-h-64 overflow-y-auto z-10 bg-background border rounded-b-lg shadow-md">
-                      <CommandEmpty>No clients found.</CommandEmpty>
-                      <CommandGroup>
-                        {clients.map((client) => (
-                          <CommandItem
-                            key={client.id}
-                            onSelect={() => setSelectedClient(client)}
-                            className={`flex flex-col items-start ${
-                              selectedClient?.id === client.id
-                                ? "bg-accent"
-                                : ""
-                            }`}
-                          >
-                            <div className="font-medium">{client.name}</div>
-                            {client.phone && (
-                              <div className="text-xs text-muted-foreground">
-                                {client.phone}
-                              </div>
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </div>
-                {selectedClient && (
-                  <div className="p-3 border rounded-md bg-accent/20">
-                    <div className="font-medium">{selectedClient.name}</div>
-                    {selectedClient.phone && (
-                      <div className="text-sm text-muted-foreground">
-                        {selectedClient.phone}
+                  {selectedClient ? (
+                    <div className="p-3 border rounded-md bg-accent/20 flex justify-between items-center">
+                      <div>
+                        <div className="font-medium">{selectedClient.name}</div>
+                        {selectedClient.phone && (
+                          <div className="text-sm text-muted-foreground">
+                            {selectedClient.phone}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedClient(null)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Command className="rounded-lg border shadow-sm overflow-visible">
+                      <CommandInput
+                        placeholder="Search clients by name..."
+                        className="border-none focus:ring-0"
+                      />
+                      <CommandList className="absolute top-full left-0 right-0 max-h-64 overflow-y-auto z-10 bg-background border rounded-b-lg shadow-md">
+                        <CommandEmpty>No clients found.</CommandEmpty>
+                        <CommandGroup>
+                          {clients.map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              onSelect={() => {
+                                setSelectedClient(client);
+                                // Close dropdown by removing focus
+                                (document.activeElement as HTMLElement)?.blur();
+                              }}
+                              className="flex flex-col items-start"
+                            >
+                              <div className="font-medium">{client.name}</div>
+                              {client.phone && (
+                                <div className="text-xs text-muted-foreground">
+                                  {client.phone}
+                                </div>
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  )}
+                </div>
               </div>
               <Input
                 placeholder="Search products..."
