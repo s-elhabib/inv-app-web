@@ -14,7 +14,7 @@ import {
   Phone,
   Loader2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +56,9 @@ export default function NewOrderPage() {
   const [shareViaWhatsAppOption, setShareViaWhatsAppOption] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [showMobileCart, setShowMobileCart] = useState(false);
+  const cartRef = useRef<HTMLDivElement>(null);
+
   // Fetch products and clients from Supabase
   useEffect(() => {
     const fetchData = async () => {
@@ -66,10 +68,10 @@ export default function NewOrderPage() {
           getProducts(),
           getClients(),
         ]);
-        
+
         setProducts(productsData);
         setClients(clientsData);
-        
+
         if (clientsData.length > 0) {
           setSelectedClient(clientsData[0]);
         }
@@ -80,9 +82,27 @@ export default function NewOrderPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
+
+  // Close mobile cart when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showMobileCart &&
+        cartRef.current &&
+        !cartRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileCart(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMobileCart]);
 
   const filteredProducts = products.filter((product) =>
     product.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -134,10 +154,10 @@ export default function NewOrderPage() {
       toast.error("Please select a client");
       return;
     }
-    
+
     try {
       setIsSaving(true);
-      
+
       // Create order in Supabase
       const orderData = {
         user_id: "1", // Mock user ID
@@ -145,14 +165,14 @@ export default function NewOrderPage() {
         status: "completed",
         total_amount: totalAmount,
       };
-      
+
       // Save order to Supabase
       const savedOrder = await createOrder(orderData);
-      
+
       if (!savedOrder || !savedOrder.id) {
         throw new Error("Failed to create order");
       }
-      
+
       // Save order items
       const orderItems = cart.map((item) => ({
         order_id: savedOrder.id,
@@ -160,9 +180,9 @@ export default function NewOrderPage() {
         quantity: item.quantity,
         price: item.price,
       }));
-      
+
       await createOrderItems(orderItems);
-      
+
       // Create order object for invoice
       const order: Order = {
         id: savedOrder.id,
@@ -179,7 +199,7 @@ export default function NewOrderPage() {
 
       // Generate and download invoice
       await generateAndDownloadInvoice(order, cart, invoiceLanguage);
-      
+
       // Share via WhatsApp if option is selected
       if (shareViaWhatsAppOption && selectedClient.phone) {
         const message = `Hello ${selectedClient.name}, your invoice #${
@@ -214,13 +234,27 @@ export default function NewOrderPage() {
       </div>
     );
   }
-  
+
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6">
+    <div className="container mx-auto p-4 relative">
+      <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">
           Select Products for Client
         </h1>
+
+        {/* Mobile cart toggle button - only visible on mobile */}
+        {cart.length > 0 && (
+          <Button
+            onClick={() => setShowMobileCart(!showMobileCart)}
+            className="lg:hidden flex items-center gap-2"
+            variant="outline"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+              {cart.length}
+            </span>
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -292,7 +326,9 @@ export default function NewOrderPage() {
                     >
                       <div>
                         <h3 className="font-medium">{product.name}</h3>
-                        <p className="text-sm text-orange-500">{product.price} MAD</p>
+                        <p className="text-sm text-orange-500">
+                          {product.price} MAD
+                        </p>
                       </div>
                       <Button
                         variant="ghost"
@@ -309,8 +345,8 @@ export default function NewOrderPage() {
           </Card>
         </div>
 
-        {/* Right column - Cart */}
-        <div className="w-full lg:w-1/3">
+        {/* Right column - Cart (desktop) */}
+        <div className="hidden lg:block w-full lg:w-1/3">
           <div className="sticky top-4">
             <Card>
               <CardHeader>
@@ -318,7 +354,7 @@ export default function NewOrderPage() {
                   <span>Cart</span>
                   {cart.length > 0 && (
                     <span className="text-sm bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                      {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                      {cart.length} {cart.length === 1 ? "item" : "items"}
                     </span>
                   )}
                 </CardTitle>
@@ -332,10 +368,15 @@ export default function NewOrderPage() {
                   <>
                     <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
                       {cart.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between">
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex-1">
                             <h3 className="font-medium">{item.name}</h3>
-                            <p className="text-sm text-orange-500">{item.price} MAD</p>
+                            <p className="text-sm text-orange-500">
+                              {item.price} MAD
+                            </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -345,7 +386,9 @@ export default function NewOrderPage() {
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
-                            <span className="w-8 text-center">{item.quantity}</span>
+                            <span className="w-8 text-center">
+                              {item.quantity}
+                            </span>
                             <Button
                               variant="outline"
                               size="sm"
@@ -370,7 +413,11 @@ export default function NewOrderPage() {
                         <span>{totalAmount.toFixed(2)} MAD</span>
                       </div>
                     </div>
-                    <Button className="w-full" size="lg" onClick={handleCheckout}>
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={handleCheckout}
+                    >
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Checkout
                     </Button>
@@ -381,12 +428,99 @@ export default function NewOrderPage() {
           </div>
         </div>
       </div>
-      
+
+      {/* Mobile Cart Slide-up Panel */}
+      {cart.length > 0 && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg transition-transform duration-300 ease-in-out lg:hidden z-50 ${
+            showMobileCart ? "translate-y-0" : "translate-y-full"
+          }`}
+          ref={cartRef}
+        >
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Cart ({cart.length} {cart.length === 1 ? "item" : "items"})
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMobileCart(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 mb-4">
+              {cart.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-medium">{item.name}</h3>
+                    <p className="text-sm text-orange-500">{item.price} MAD</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, -1)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-8 text-center">{item.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateQuantity(item.id, 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFromCart(item.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between font-medium mb-4">
+                <span>Total Amount:</span>
+                <span>{totalAmount.toFixed(2)} MAD</span>
+              </div>
+              <Button className="w-full" size="lg" onClick={handleCheckout}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Checkout
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating cart button for mobile - visible when cart has items and mobile cart is closed */}
+      {cart.length > 0 && !showMobileCart && (
+        <Button
+          className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg lg:hidden z-40 flex items-center justify-center"
+          onClick={() => setShowMobileCart(true)}
+        >
+          <div className="relative">
+            <ShoppingCart className="h-6 w-6" />
+            <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {cart.length}
+            </span>
+          </div>
+        </Button>
+      )}
+
       {/* Invoice generation dialog */}
-      <Dialog
-        open={showInvoiceDialog}
-        onOpenChange={setShowInvoiceDialog}
-      >
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Generate Invoice</DialogTitle>
@@ -421,18 +555,13 @@ export default function NewOrderPage() {
                 type="checkbox"
                 id="share-whatsapp"
                 checked={shareViaWhatsAppOption}
-                onChange={(e) =>
-                  setShareViaWhatsAppOption(e.target.checked)
-                }
+                onChange={(e) => setShareViaWhatsAppOption(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
-              <Label
-                htmlFor="share-whatsapp"
-                className="flex items-center"
-              >
+              <Label htmlFor="share-whatsapp" className="flex items-center">
                 <Phone className="mr-2 h-4 w-4" />
-                Share via WhatsApp (
-                {selectedClient?.phone || "No phone number"})
+                Share via WhatsApp ({selectedClient?.phone || "No phone number"}
+                )
               </Label>
             </div>
           </div>
