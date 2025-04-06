@@ -1,4 +1,5 @@
 import { Order, CartItem } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 
 // Function to generate invoice HTML
 export const generateInvoiceHTML = (
@@ -9,7 +10,7 @@ export const generateInvoiceHTML = (
   const isArabic = language === 'ar';
   const dir = isArabic ? 'rtl' : 'ltr';
   const textAlign = isArabic ? 'right' : 'left';
-  
+
   // Translations
   const translations = {
     invoice: isArabic ? 'فاتورة' : 'Invoice',
@@ -115,7 +116,7 @@ export const generateInvoiceHTML = (
         <div class="invoice-title">${translations.invoice}</div>
         <div>#${order.id}</div>
       </div>
-      
+
       <div class="invoice-details">
         <div>
           <p><strong>${translations.date}:</strong> ${date}</p>
@@ -125,7 +126,7 @@ export const generateInvoiceHTML = (
           <p><strong>${translations.client}:</strong> ${order.client?.name || 'N/A'}</p>
         </div>
       </div>
-      
+
       <table>
         <thead>
           <tr>
@@ -146,7 +147,7 @@ export const generateInvoiceHTML = (
           `).join('')}
         </tbody>
       </table>
-      
+
       <div class="totals">
         <table>
           <tr>
@@ -163,7 +164,7 @@ export const generateInvoiceHTML = (
           </tr>
         </table>
       </div>
-      
+
       <div class="footer">
         <p>${translations.thankYou}</p>
       </div>
@@ -180,14 +181,14 @@ export const generateAndDownloadInvoice = async (
 ): Promise<void> => {
   // Generate HTML
   const html = generateInvoiceHTML(order, items, language);
-  
+
   // Create a blob from the HTML
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
-  
+
   // Open the invoice in a new window for printing
   const printWindow = window.open(url, '_blank');
-  
+
   if (printWindow) {
     printWindow.onload = () => {
       printWindow.print();
@@ -202,7 +203,7 @@ export const generateAndDownloadInvoice = async (
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
+
     // Clean up
     setTimeout(() => {
       URL.revokeObjectURL(url);
@@ -214,10 +215,10 @@ export const generateAndDownloadInvoice = async (
 export const shareViaWhatsApp = (phoneNumber: string, message: string): void => {
   // Format phone number (remove spaces, ensure it starts with '+212')
   const formattedPhone = phoneNumber.replace(/\s/g, '').replace(/^0/, '+212');
-  
+
   // Create WhatsApp URL
   const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
-  
+
   // Open WhatsApp
   window.open(whatsappUrl, '_blank');
 };

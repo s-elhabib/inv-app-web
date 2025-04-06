@@ -12,8 +12,9 @@ import {
   FileText,
   Share2,
   Phone,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,40 +28,64 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { generateAndDownloadInvoice, shareViaWhatsApp } from "@/lib/invoice";
 import { CartItem, Client, Order } from "@/lib/types";
+import {
+  getProducts,
+  getClients,
+  createOrder,
+  createOrderItems,
+} from "@/lib/supabase";
 
 interface Product {
   id: string;
   name: string;
   price: number;
+  description?: string;
+  stock?: number;
+  category?: string;
+  image?: string;
 }
-
-const clients: Client[] = [
-  { id: "1", name: "Abd Razak", phone: "0612345678" },
-  { id: "2", name: "Fatima Zahra", phone: "0698765432" },
-  { id: "3", name: "Mohammed Ali", phone: "0654321098" },
-];
-
-const products = [
-  { id: "1", name: "Almond Briouats 300g", price: 70 },
-  { id: "2", name: "Almond Milk 1L", price: 1400 },
-  { id: "3", name: "Avocado (each)", price: 800 },
-  { id: "4", name: "Bagels (6 pack)", price: 1300 },
-  { id: "5", name: "Baghrir (Thousand Hole Pancakes) 4pcs", price: 25 },
-  { id: "6", name: "Beef Steak 400g", price: 1200 },
-];
-
-// Using CartItem from lib/types.ts
 
 export default function NewOrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedClient, setSelectedClient] = useState<Client>(clients[0]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceLanguage, setInvoiceLanguage] = useState<"en" | "ar">("en");
   const [shareViaWhatsAppOption, setShareViaWhatsAppOption] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch products and clients from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [productsData, clientsData] = await Promise.all([
+          getProducts(),
+          getClients(),
+        ]);
+
+        setProducts(productsData);
+        setClients(clientsData);
+
+        if (clientsData.length > 0) {
+          setSelectedClient(clientsData[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    product.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const addToCart = (product: Product) => {
@@ -104,46 +129,91 @@ export default function NewOrderPage() {
     setShowInvoiceDialog(true);
   };
 
-  const handleGenerateInvoice = () => {
-    // Create order object
-    const order: Order = {
-      id: `ORD-${Date.now()}`,
-      userId: "1", // Mock user ID
-      client: selectedClient,
-      products: cart.map((item) => ({
-        productId: item.id,
+  const handleGenerateInvoice = async () => {
+    if (!selectedClient) {
+      toast.error("Please select a client");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Create order in Supabase
+      const orderData = {
+        user_id: "1", // Mock user ID
+        client_id: selectedClient.id,
+        status: "completed",
+        total_amount: totalAmount,
+      };
+
+      // Save order to Supabase
+      const savedOrder = await createOrder(orderData);
+
+      if (!savedOrder || !savedOrder.id) {
+        throw new Error("Failed to create order");
+      }
+
+      // Save order items
+      const orderItems = cart.map((item) => ({
+        order_id: savedOrder.id,
+        product_id: item.id,
         quantity: item.quantity,
-      })),
-      status: "completed",
-      totalAmount,
-      createdAt: new Date().toISOString(),
-    };
+        price: item.price,
+      }));
 
-    // Generate and download invoice
-    generateAndDownloadInvoice(order, cart, invoiceLanguage)
-      .then(() => {
-        // Share via WhatsApp if option is selected
-        if (shareViaWhatsAppOption && selectedClient.phone) {
-          const message = `Hello ${selectedClient.name}, your invoice #${
-            order.id
-          } for ${totalAmount.toFixed(
-            2
-          )} MAD is ready. Thank you for your business!`;
-          shareViaWhatsApp(selectedClient.phone, message);
-        }
+      await createOrderItems(orderItems);
 
-        // Show success message
-        toast.success("Invoice generated successfully");
+      // Create order object for invoice
+      const order: Order = {
+        id: savedOrder.id,
+        userId: "1",
+        client: selectedClient,
+        products: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        status: "completed",
+        totalAmount,
+        createdAt: savedOrder.created_at || new Date().toISOString(),
+      };
 
-        // Reset cart
-        setCart([]);
-        setShowInvoiceDialog(false);
-      })
-      .catch((error) => {
-        console.error("Error generating invoice:", error);
-        toast.error("Failed to generate invoice");
-      });
+      // Generate and download invoice
+      await generateAndDownloadInvoice(order, cart, invoiceLanguage);
+
+      // Share via WhatsApp if option is selected
+      if (shareViaWhatsAppOption && selectedClient.phone) {
+        const message = `Hello ${selectedClient.name}, your invoice #${
+          savedOrder.id
+        } for ${totalAmount.toFixed(
+          2
+        )} MAD is ready. Thank you for your business!`;
+        shareViaWhatsApp(selectedClient.phone, message);
+      }
+
+      // Show success message
+      toast.success("Order saved and invoice generated successfully");
+
+      // Reset cart
+      setCart([]);
+      setShowInvoiceDialog(false);
+    } catch (error) {
+      console.error("Error processing order:", error);
+      toast.error("Failed to process order");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4 flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p>Loading products and clients...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -156,10 +226,48 @@ export default function NewOrderPage() {
       <Card>
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Client: {selectedClient.name}</CardTitle>
-            <Button variant="outline" size="sm">
-              Change
-            </Button>
+            <CardTitle>
+              Client: {selectedClient?.name || "Select a client"}
+            </CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Change
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Select Client</DialogTitle>
+                  <DialogDescription>
+                    Choose a client for this order.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  {clients.map((client) => (
+                    <div
+                      key={client.id}
+                      className={`p-3 border rounded-md cursor-pointer hover:bg-accent ${
+                        selectedClient?.id === client.id ? "bg-accent" : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedClient(client);
+                        // Close the dialog by clicking the close button
+                        document
+                          .querySelector("[data-radix-collection-item]")
+                          ?.click();
+                      }}
+                    >
+                      <div className="font-medium">{client.name}</div>
+                      {client.phone && (
+                        <div className="text-sm text-muted-foreground">
+                          {client.phone}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           <Input
             placeholder="Search products..."
@@ -301,9 +409,18 @@ export default function NewOrderPage() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleGenerateInvoice}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate Invoice
+                  <Button onClick={handleGenerateInvoice} disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Generate Invoice
+                      </>
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
