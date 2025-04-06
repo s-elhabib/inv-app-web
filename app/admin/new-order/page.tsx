@@ -296,9 +296,12 @@ export default function NewOrderPage() {
                           onClick={() => {
                             setSelectedClient(client);
                             // Close the dialog by clicking the close button
-                            document
-                              .querySelector("[data-radix-collection-item]")
-                              ?.click();
+                            const closeButton = document.querySelector(
+                              "[data-radix-collection-item]"
+                            );
+                            if (closeButton instanceof HTMLElement) {
+                              closeButton.click();
+                            }
                           }}
                         >
                           <div className="font-medium">{client.name}</div>
