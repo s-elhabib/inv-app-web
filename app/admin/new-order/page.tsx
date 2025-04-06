@@ -13,8 +13,14 @@ import {
   Share2,
   Phone,
   Loader2,
+  Home,
+  ShoppingBag,
+  Package,
+  History,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   Dialog,
   DialogContent,
@@ -589,6 +595,55 @@ export default function NewOrderPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
+        <Link href="/admin" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-xs">Dashboard</span>
+          </Button>
+        </Link>
+        <Link href="/admin/new-order" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none bg-muted"
+          >
+            <ShoppingBag className="h-5 w-5" />
+            <span className="text-xs">New Order</span>
+          </Button>
+        </Link>
+        <Link href="/admin/inventory" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <Package className="h-5 w-5" />
+            <span className="text-xs">Inventory</span>
+          </Button>
+        </Link>
+        <Link href="/admin/orders" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <History className="h-5 w-5" />
+            <span className="text-xs">Orders History</span>
+          </Button>
+        </Link>
+        <Link href="/admin/settings" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-xs">Settings</span>
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

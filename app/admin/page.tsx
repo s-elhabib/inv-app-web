@@ -1,7 +1,9 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Package, ShoppingCart, DollarSign, Box } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign, Box, Home, ShoppingBag, History, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from "@/lib/utils";
 
@@ -54,7 +56,7 @@ const stats = [
 
 export default function AdminPage() {
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4 space-y-6 pb-16">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">Welcome back to your dashboard</p>
@@ -97,17 +99,66 @@ export default function AdminPage() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2} 
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
+        <Link href="/admin" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none bg-muted"
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-xs">Dashboard</span>
+          </Button>
+        </Link>
+        <Link href="/admin/new-order" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <ShoppingBag className="h-5 w-5" />
+            <span className="text-xs">New Order</span>
+          </Button>
+        </Link>
+        <Link href="/admin/inventory" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <Package className="h-5 w-5" />
+            <span className="text-xs">Inventory</span>
+          </Button>
+        </Link>
+        <Link href="/admin/orders" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <History className="h-5 w-5" />
+            <span className="text-xs">Orders History</span>
+          </Button>
+        </Link>
+        <Link href="/admin/settings" className="w-full">
+          <Button
+            variant="ghost"
+            className="flex flex-col h-full w-full rounded-none"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-xs">Settings</span>
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
