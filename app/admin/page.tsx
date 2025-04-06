@@ -275,10 +275,10 @@ export default function AdminPage() {
       trendUp: true,
     },
     {
-      title: "Total Revenue",
+      title: "Total Revenue(ROSITA)",
       value: formatCurrency(totalRevenue),
       icon: DollarSign,
-      trend: "-8%",
+      trend: "",
       // trendUp: false,
       timeframe: revenueTimeframe,
       setTimeframe: setRevenueTimeframe,

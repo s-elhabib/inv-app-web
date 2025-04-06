@@ -13,12 +13,22 @@ export const useAuth = create<AuthState>((set) => ({
   isAuthenticated: false,
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   login: async (email, password) => {
-    // TODO: Implement actual authentication
+    // Mock authentication with different roles based on email
+    let role = 'admin';
+    let name = 'John Doe';
+
+    if (email === 'supplier@admin.com' && password === 'psw2551') {
+      role = 'supplier';
+      name = 'Supplier Admin';
+    } else if (email !== 'admin@example.com') {
+      role = 'client';
+    }
+
     const mockUser: User = {
       id: '1',
-      name: 'John Doe',
+      name,
       email,
-      role: 'admin',
+      role: role as 'admin' | 'client' | 'supplier',
     };
     set({ user: mockUser, isAuthenticated: true });
   },

@@ -20,12 +20,19 @@ export default function LoginPage() {
     setPassword("password123");
   };
 
+  const fillSupplierCredentials = () => {
+    setEmail("supplier@admin.com");
+    setPassword("psw2551");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(email, password);
       toast.success("Successfully logged in");
-      router.push("/admin");
+
+      // Redirect based on user role
+      router.push("/"); // This will trigger the redirection logic in the home page
     } catch (error) {
       toast.error("Failed to login");
     }
@@ -67,14 +74,25 @@ export default function LoginPage() {
             Sign In
           </Button>
         </form>
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={fillDemoCredentials}
-            className="text-sm text-primary hover:underline"
-          >
-            Use demo credentials
-          </button>
+        <div className="text-center space-y-2">
+          <div>
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="text-sm text-primary hover:underline"
+            >
+              Use admin credentials
+            </button>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={fillSupplierCredentials}
+              className="text-sm text-primary hover:underline"
+            >
+              Use supplier credentials
+            </button>
+          </div>
         </div>
       </Card>
     </div>

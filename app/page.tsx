@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useAuth } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
@@ -12,7 +12,13 @@ export default function Home() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push(user?.role === 'admin' ? '/admin' : '/client');
+      if (user?.role === "admin") {
+        router.push("/admin");
+      } else if (user?.role === "supplier") {
+        router.push("/supplier");
+      } else {
+        router.push("/client");
+      }
     }
   }, [isAuthenticated, user, router]);
 
@@ -28,16 +34,13 @@ export default function Home() {
           </p>
         </div>
         <div className="space-y-4">
-          <Button
-            className="w-full"
-            onClick={() => router.push('/auth/login')}
-          >
+          <Button className="w-full" onClick={() => router.push("/auth/login")}>
             Sign In
           </Button>
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push('/auth/register')}
+            onClick={() => router.push("/auth/register")}
           >
             Create Account
           </Button>

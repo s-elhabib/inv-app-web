@@ -417,6 +417,222 @@ export async function getOrderById(id: string) {
   };
 }
 
+// Suppliers
+export async function getSuppliers() {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching suppliers:', error);
+    return [];
+  }
+
+  return data;
+}
+
+export async function getSupplierById(id: string) {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching supplier ${id}:`, error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function addSupplier(supplierData: any) {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .insert(supplierData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating supplier:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateSupplier(id: string, supplierData: any) {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .update(supplierData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating supplier:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteSupplier(id: string) {
+  // First check if any supplier orders are using this supplier
+  const { data: ordersUsingSupplier, error: checkError } = await supabase
+    .from('supplier_orders')
+    .select('id')
+    .eq('supplier_id', id);
+
+  if (checkError) {
+    console.error('Error checking orders using supplier:', checkError);
+    throw checkError;
+  }
+
+  // If orders are using this supplier, don't allow deletion
+  if (ordersUsingSupplier && ordersUsingSupplier.length > 0) {
+    throw new Error(`Cannot delete supplier because it's used by ${ordersUsingSupplier.length} orders`);
+  }
+
+  // If no orders are using this supplier, proceed with deletion
+  const { error } = await supabase
+    .from('suppliers')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting supplier:', error);
+    throw error;
+  }
+
+  return true;
+}
+
+// Supplier Orders
+export async function getSupplierOrders() {
+  const { data, error } = await supabase
+    .from('supplier_orders')
+    .select(`
+      *,
+      supplier:suppliers(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching supplier orders:', error);
+    return [];
+  }
+
+  return data;
+}
+
+export async function getSupplierOrderById(id: string) {
+  const { data, error } = await supabase
+    .from('supplier_orders')
+    .select(`
+      *,
+      supplier:suppliers(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching supplier order ${id}:`, error);
+    return null;
+  }
+
+  // Fetch order items separately
+  const { data: orderItems, error: itemsError } = await supabase
+    .from('supplier_order_items')
+    .select(`
+      *,
+      product:products(*)
+    `)
+    .eq('supplier_order_id', id);
+
+  if (itemsError) {
+    console.error(`Error fetching supplier order items for order ${id}:`, itemsError);
+  }
+
+  // Combine the data
+  return {
+    ...data,
+    order_items: orderItems || []
+  };
+}
+
+export async function createSupplierOrder(orderData: any) {
+  const { data, error } = await supabase
+    .from('supplier_orders')
+    .insert(orderData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating supplier order:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createSupplierOrderItems(items: any[]) {
+  const { data, error } = await supabase
+    .from('supplier_order_items')
+    .insert(items)
+    .select();
+
+  if (error) {
+    console.error('Error creating supplier order items:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateSupplierOrder(id: string, orderData: any) {
+  const { data, error } = await supabase
+    .from('supplier_orders')
+    .update(orderData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating supplier order:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteSupplierOrder(id: string) {
+  // First delete all order items
+  const { error: itemsError } = await supabase
+    .from('supplier_order_items')
+    .delete()
+    .eq('supplier_order_id', id);
+
+  if (itemsError) {
+    console.error(`Error deleting supplier order items for order ${id}:`, itemsError);
+    throw itemsError;
+  }
+
+  // Then delete the order
+  const { error } = await supabase
+    .from('supplier_orders')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting supplier order:', error);
+    throw error;
+  }
+
+  return true;
+}
+
 // Order Items (stored in sales table)
 export async function createOrderItems(items: any[]) {
   // Convert order_items format to sales table format
