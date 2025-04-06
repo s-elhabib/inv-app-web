@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Download,
   Printer,
+  Eye,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupplierOrderById, updateSupplierOrder } from "@/lib/supabase";
@@ -54,7 +55,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,9 +94,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
 
   // Format currency
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'MAD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "MAD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
@@ -161,16 +166,16 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <Button
             onClick={() => setShowStatusDialog(true)}
             className={
-              order.status === 'received'
-                ? 'bg-green-600 hover:bg-green-700'
-                : order.status === 'pending'
-                ? 'bg-yellow-600 hover:bg-yellow-700'
-                : 'bg-red-600 hover:bg-red-700'
+              order.status === "received"
+                ? "bg-green-600 hover:bg-green-700"
+                : order.status === "pending"
+                ? "bg-yellow-600 hover:bg-yellow-700"
+                : "bg-red-600 hover:bg-red-700"
             }
           >
-            {order.status === 'received' ? (
+            {order.status === "received" ? (
               <Check className="mr-2 h-4 w-4" />
-            ) : order.status === 'pending' ? (
+            ) : order.status === "pending" ? (
               <AlertTriangle className="mr-2 h-4 w-4" />
             ) : (
               <X className="mr-2 h-4 w-4" />
@@ -185,7 +190,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           Order #{order.id.substring(0, 8)}
         </h1>
         <p className="text-muted-foreground">
-          Created on {format(parseISO(order.created_at), "MMMM d, yyyy 'at' h:mm a")}
+          Created on{" "}
+          {format(parseISO(order.created_at), "MMMM d, yyyy 'at' h:mm a")}
         </p>
       </div>
 
@@ -205,7 +211,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <FileText className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -215,23 +221,25 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <Package className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">Status</p>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  order.status === 'received' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                    : order.status === 'pending' 
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                }`}>
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    order.status === "received"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                      : order.status === "pending"
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                  }`}
+                >
                   {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                 </span>
               </div>
             </div>
-            
+
             {order.notes && (
               <div>
                 <p className="text-sm font-medium">Notes</p>
@@ -240,11 +248,14 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </p>
               </div>
             )}
-            
+
             {order.invoice_image && (
               <div className="mt-4 print:hidden">
                 <p className="text-sm font-medium mb-2">Invoice Image</p>
-                <div className="relative border rounded-md overflow-hidden" style={{ maxHeight: "200px" }}>
+                <div
+                  className="relative border rounded-md overflow-hidden"
+                  style={{ maxHeight: "200px" }}
+                >
                   <img
                     src={order.invoice_image}
                     alt="Invoice"
@@ -252,7 +263,11 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                     onClick={() => setShowImageDialog(true)}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <Button variant="secondary" size="sm" onClick={() => setShowImageDialog(true)}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowImageDialog(true)}
+                    >
                       <Eye className="mr-2 h-4 w-4" />
                       View Full Image
                     </Button>
@@ -266,7 +281,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         {/* Supplier Details */}
         <Card className="print:border-0 print:shadow-none">
           <CardHeader className="print:pb-2">
-            <CardTitle className="print:text-lg">Supplier Information</CardTitle>
+            <CardTitle className="print:text-lg">
+              Supplier Information
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 print:space-y-2">
             <div className="flex items-center space-x-3">
@@ -278,7 +295,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </p>
               </div>
             </div>
-            
+
             {order.supplier?.contact_person && (
               <div className="flex items-center space-x-3">
                 <User className="h-5 w-5 text-muted-foreground" />
@@ -290,7 +307,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
             )}
-            
+
             {order.supplier?.phone && (
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
@@ -302,7 +319,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
             )}
-            
+
             {order.supplier?.email && (
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-muted-foreground" />
@@ -314,7 +331,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
             )}
-            
+
             {order.supplier?.address && (
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-muted-foreground" />
@@ -354,15 +371,23 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                   <TableRow key={item.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{item.product?.name || "Unknown Product"}</div>
+                        <div className="font-medium">
+                          {item.product?.name || "Unknown Product"}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {item.product?.category || "Uncategorized"}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
+                    <TableCell className="text-right">
+                      {item.quantity}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(item.price)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(item.total)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -372,7 +397,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <div className="flex flex-col gap-2 items-end mt-4 print:mt-2">
             <div className="flex justify-between w-full md:w-1/3 py-2 border-t print:w-1/3">
               <span className="font-medium">Total Amount:</span>
-              <span className="font-bold">{formatCurrency(order.total_amount)}</span>
+              <span className="font-bold">
+                {formatCurrency(order.total_amount)}
+              </span>
             </div>
           </div>
         </CardContent>
@@ -400,7 +427,10 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowStatusDialog(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleUpdateStatus} disabled={isSaving}>
@@ -432,10 +462,18 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowImageDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowImageDialog(false)}
+              >
                 Close
               </Button>
-              <a href={order.invoice_image} download={`invoice-${order.id.substring(0, 8)}`} target="_blank" rel="noopener noreferrer">
+              <a
+                href={order.invoice_image}
+                download={`invoice-${order.id.substring(0, 8)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button>
                   <Download className="mr-2 h-4 w-4" />
                   Download
