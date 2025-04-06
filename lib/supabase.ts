@@ -11,13 +11,58 @@ export async function getProducts() {
     .from('products')
     .select('*')
     .order('name');
-  
+
   if (error) {
     console.error('Error fetching products:', error);
     return [];
   }
-  
+
   return data;
+}
+
+export async function createProduct(productData: any) {
+  const { data, error } = await supabase
+    .from('products')
+    .insert(productData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating product:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateProduct(id: number, productData: any) {
+  const { data, error } = await supabase
+    .from('products')
+    .update(productData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteProduct(id: number) {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+
+  return true;
 }
 
 // Clients
@@ -26,12 +71,12 @@ export async function getClients() {
     .from('clients')
     .select('*')
     .order('name');
-  
+
   if (error) {
     console.error('Error fetching clients:', error);
     return [];
   }
-  
+
   return data;
 }
 
@@ -42,12 +87,12 @@ export async function createOrder(orderData: any) {
     .insert(orderData)
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error creating order:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -59,12 +104,12 @@ export async function getOrders() {
       client:clients(*)
     `)
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error fetching orders:', error);
     return [];
   }
-  
+
   return data;
 }
 
@@ -81,12 +126,12 @@ export async function getOrderById(id: string) {
     `)
     .eq('id', id)
     .single();
-  
+
   if (error) {
     console.error(`Error fetching order ${id}:`, error);
     return null;
   }
-  
+
   return data;
 }
 
@@ -96,11 +141,11 @@ export async function createOrderItems(items: any[]) {
     .from('order_items')
     .insert(items)
     .select();
-  
+
   if (error) {
     console.error('Error creating order items:', error);
     throw error;
   }
-  
+
   return data;
 }
