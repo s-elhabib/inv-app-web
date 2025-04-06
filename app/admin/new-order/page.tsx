@@ -56,7 +56,7 @@ export default function NewOrderPage() {
   const [shareViaWhatsAppOption, setShareViaWhatsAppOption] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
+  
   // Fetch products and clients from Supabase
   useEffect(() => {
     const fetchData = async () => {
@@ -66,10 +66,10 @@ export default function NewOrderPage() {
           getProducts(),
           getClients(),
         ]);
-
+        
         setProducts(productsData);
         setClients(clientsData);
-
+        
         if (clientsData.length > 0) {
           setSelectedClient(clientsData[0]);
         }
@@ -80,7 +80,7 @@ export default function NewOrderPage() {
         setIsLoading(false);
       }
     };
-
+    
     fetchData();
   }, []);
 
@@ -134,10 +134,10 @@ export default function NewOrderPage() {
       toast.error("Please select a client");
       return;
     }
-
+    
     try {
       setIsSaving(true);
-
+      
       // Create order in Supabase
       const orderData = {
         user_id: "1", // Mock user ID
@@ -145,14 +145,14 @@ export default function NewOrderPage() {
         status: "completed",
         total_amount: totalAmount,
       };
-
+      
       // Save order to Supabase
       const savedOrder = await createOrder(orderData);
-
+      
       if (!savedOrder || !savedOrder.id) {
         throw new Error("Failed to create order");
       }
-
+      
       // Save order items
       const orderItems = cart.map((item) => ({
         order_id: savedOrder.id,
@@ -160,9 +160,9 @@ export default function NewOrderPage() {
         quantity: item.quantity,
         price: item.price,
       }));
-
+      
       await createOrderItems(orderItems);
-
+      
       // Create order object for invoice
       const order: Order = {
         id: savedOrder.id,
@@ -179,7 +179,7 @@ export default function NewOrderPage() {
 
       // Generate and download invoice
       await generateAndDownloadInvoice(order, cart, invoiceLanguage);
-
+      
       // Share via WhatsApp if option is selected
       if (shareViaWhatsAppOption && selectedClient.phone) {
         const message = `Hello ${selectedClient.name}, your invoice #${
@@ -214,220 +214,252 @@ export default function NewOrderPage() {
       </div>
     );
   }
-
+  
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div>
+    <div className="container mx-auto p-4">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">
           Select Products for Client
         </h1>
       </div>
 
-      <Card>
-        <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              Client: {selectedClient?.name || "Select a client"}
-            </CardTitle>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Change
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Select Client</DialogTitle>
-                  <DialogDescription>
-                    Choose a client for this order.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {clients.map((client) => (
-                    <div
-                      key={client.id}
-                      className={`p-3 border rounded-md cursor-pointer hover:bg-accent ${
-                        selectedClient?.id === client.id ? "bg-accent" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedClient(client);
-                        // Close the dialog by clicking the close button
-                        document
-                          .querySelector("[data-radix-collection-item]")
-                          ?.click();
-                      }}
-                    >
-                      <div className="font-medium">{client.name}</div>
-                      {client.phone && (
-                        <div className="text-sm text-muted-foreground">
-                          {client.phone}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left column - Products */}
+        <div className="w-full lg:w-2/3">
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between">
+                <CardTitle>
+                  Client: {selectedClient?.name || "Select a client"}
+                </CardTitle>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Change
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Select Client</DialogTitle>
+                      <DialogDescription>
+                        Choose a client for this order.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      {clients.map((client) => (
+                        <div
+                          key={client.id}
+                          className={`p-3 border rounded-md cursor-pointer hover:bg-accent ${
+                            selectedClient?.id === client.id ? "bg-accent" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedClient(client);
+                            // Close the dialog by clicking the close button
+                            document
+                              .querySelector("[data-radix-collection-item]")
+                              ?.click();
+                          }}
+                        >
+                          <div className="font-medium">{client.name}</div>
+                          {client.phone && (
+                            <div className="text-sm text-muted-foreground">
+                              {client.phone}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                {filteredProducts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No products found matching your search.
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between py-3 border-b last:border-0"
+                    >
+                      <div>
+                        <h3 className="font-medium">{product.name}</h3>
+                        <p className="text-sm text-orange-500">{product.price} MAD</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => addToCart(product)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column - Cart */}
+        <div className="w-full lg:w-1/3">
+          <div className="sticky top-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex justify-between items-center">
+                  <span>Cart</span>
+                  {cart.length > 0 && (
+                    <span className="text-sm bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                      {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {cart.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Your cart is empty. Add products to get started.
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                      {cart.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium">{item.name}</h3>
+                            <p className="text-sm text-orange-500">{item.price} MAD</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.id, -1)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateQuantity(item.id, 1)}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromCart(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center justify-between font-medium">
+                        <span>Total Amount:</span>
+                        <span>{totalAmount.toFixed(2)} MAD</span>
+                      </div>
+                    </div>
+                    <Button className="w-full" size="lg" onClick={handleCheckout}>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Checkout
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
-          <Input
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="flex items-center justify-between py-2 border-b last:border-0"
+        </div>
+      </div>
+      
+      {/* Invoice generation dialog */}
+      <Dialog
+        open={showInvoiceDialog}
+        onOpenChange={setShowInvoiceDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Invoice</DialogTitle>
+            <DialogDescription>
+              Choose your invoice options below.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Invoice Language</Label>
+              <RadioGroup
+                value={invoiceLanguage}
+                onValueChange={(value) =>
+                  setInvoiceLanguage(value as "en" | "ar")
+                }
+                className="flex space-x-4"
               >
-                <div>
-                  <h3 className="font-medium">{product.name}</h3>
-                  <p className="text-sm text-orange-500">{product.price} MAD</p>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="en" id="lang-en" />
+                  <Label htmlFor="lang-en">English</Label>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => addToCart(product)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {cart.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Selected Products</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {cart.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-orange-500">{item.price} MAD</p>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="ar" id="lang-ar" />
+                  <Label htmlFor="lang-ar">Arabic</Label>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, -1)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-8 text-center">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeFromCart(item.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <div className="pt-4 border-t">
-              <div className="flex items-center justify-between font-medium">
-                <span>Total Amount:</span>
-                <span>{totalAmount.toFixed(2)} MAD</span>
-              </div>
+              </RadioGroup>
             </div>
-            <Button className="w-full" size="lg" onClick={handleCheckout}>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Checkout ({cart.length} items)
-            </Button>
 
-            <Dialog
-              open={showInvoiceDialog}
-              onOpenChange={setShowInvoiceDialog}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="share-whatsapp"
+                checked={shareViaWhatsAppOption}
+                onChange={(e) =>
+                  setShareViaWhatsAppOption(e.target.checked)
+                }
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label
+                htmlFor="share-whatsapp"
+                className="flex items-center"
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Share via WhatsApp (
+                {selectedClient?.phone || "No phone number"})
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowInvoiceDialog(false)}
             >
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Generate Invoice</DialogTitle>
-                  <DialogDescription>
-                    Choose your invoice options below.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Invoice Language</Label>
-                    <RadioGroup
-                      value={invoiceLanguage}
-                      onValueChange={(value) =>
-                        setInvoiceLanguage(value as "en" | "ar")
-                      }
-                      className="flex space-x-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="en" id="lang-en" />
-                        <Label htmlFor="lang-en">English</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="ar" id="lang-ar" />
-                        <Label htmlFor="lang-ar">Arabic</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="share-whatsapp"
-                      checked={shareViaWhatsAppOption}
-                      onChange={(e) =>
-                        setShareViaWhatsAppOption(e.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label
-                      htmlFor="share-whatsapp"
-                      className="flex items-center"
-                    >
-                      <Phone className="mr-2 h-4 w-4" />
-                      Share via WhatsApp (
-                      {selectedClient.phone || "No phone number"})
-                    </Label>
-                  </div>
-                </div>
-
-                <DialogFooter className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowInvoiceDialog(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleGenerateInvoice} disabled={isSaving}>
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Generate Invoice
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardContent>
-        </Card>
-      )}
+              Cancel
+            </Button>
+            <Button onClick={handleGenerateInvoice} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Invoice
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
