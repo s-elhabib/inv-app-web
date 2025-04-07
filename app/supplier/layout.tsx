@@ -23,7 +23,7 @@ const navigation = [
   { name: "New Order", href: "/supplier/new-order", icon: ShoppingCart },
   { name: "Orders", href: "/supplier/orders", icon: ReceiptIcon },
   { name: "Inventory", href: "/supplier/inventory", icon: Package },
-  { name: "Logout", href: "#", icon: LogOut, action: "logout" },
+  { name: "Settings", href: "/supplier/settings", icon: Settings },
 ];
 
 export default function SupplierLayout({
@@ -79,24 +79,13 @@ export default function SupplierLayout({
         <div className="grid h-16 grid-cols-6 items-center">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
-
-            // Handle logout action
-            if (item.action === "logout") {
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    useAuth.getState().logout();
-                    router.push("/auth/login");
-                  }}
-                  className="flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary"
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </button>
-              );
-            }
+            // Check if the current path starts with the navigation item's path
+            // This ensures the correct item is highlighted even on sub-pages
+            // For the dashboard (root path), only highlight when exactly at /supplier
+            const isActive =
+              item.href === "/supplier"
+                ? pathname === "/supplier"
+                : pathname.startsWith(item.href);
 
             return (
               <Link
