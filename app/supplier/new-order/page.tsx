@@ -329,6 +329,13 @@ export default function NewSupplierOrderPage() {
     try {
       setIsSaving(true);
 
+      // Array to collect price updates
+      const priceUpdates: Array<{
+        name: string;
+        oldPrice: number;
+        newPrice: number;
+      }> = [];
+
       // Create the order
       const orderData = {
         supplier_id: selectedSupplier.id,
@@ -381,14 +388,12 @@ export default function NewSupplierOrderPage() {
                 `Updating price for product ${productToUpdate.name} from ${productToUpdate.price} to ${item.price}`
               );
 
-              // Show toast notification about price update
-              toast.info(
-                `Updated price for ${
-                  productToUpdate.name
-                } from ${formatCurrency(
-                  productToUpdate.price
-                )} to ${formatCurrency(item.price)}`
-              );
+              // We'll collect price updates and show them in a single toast later
+              priceUpdates.push({
+                name: productToUpdate.name,
+                oldPrice: productToUpdate.price,
+                newPrice: item.price,
+              });
             }
 
             // Update product in database
@@ -405,6 +410,26 @@ export default function NewSupplierOrderPage() {
           );
           // Continue with other products even if one fails
         }
+      }
+
+      // Show a single toast with all price updates if any
+      if (priceUpdates.length > 0) {
+        const priceUpdateMessage = (
+          <div>
+            <p className="font-medium">Product prices updated:</p>
+            <ul className="mt-2 text-sm space-y-1">
+              {priceUpdates.map((update, index) => (
+                <li key={index}>
+                  {update.name}: {formatCurrency(update.oldPrice)} →{" "}
+                  {formatCurrency(update.newPrice)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+        toast.info(priceUpdateMessage, {
+          duration: 6000, // Show longer for multiple updates
+        });
       }
 
       toast.success("Order created successfully");
