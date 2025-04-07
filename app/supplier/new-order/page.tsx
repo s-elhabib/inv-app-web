@@ -445,7 +445,7 @@ export default function NewSupplierOrderPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pb-16">
+    <div className="container mx-auto p-4 space-y-6 pb-16 max-w-full">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -457,7 +457,7 @@ export default function NewSupplierOrderPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 max-w-full">
         {/* Order Details */}
         <Card>
           <CardHeader>
@@ -656,7 +656,14 @@ export default function NewSupplierOrderPage() {
                   />
                 </div>
 
-                <div className="h-[250px] overflow-y-auto border rounded-md">
+                <div
+                  className="h-[250px] overflow-y-auto border rounded-md"
+                  style={{
+                    maxWidth: "100%",
+                    overflowX: "hidden",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
                   {filteredProducts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full p-4">
                       <Package className="h-8 w-8 text-muted-foreground mb-2" />
@@ -691,7 +698,7 @@ export default function NewSupplierOrderPage() {
                         return (
                           <div
                             key={product.id}
-                            className="p-3 rounded-md hover:bg-accent border-b last:border-0"
+                            className="p-3 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden"
                           >
                             <div className="flex justify-between items-start mb-2">
                               <div>
@@ -734,8 +741,8 @@ export default function NewSupplierOrderPage() {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                <div className="flex-1">
+                              <div className="flex flex-wrap gap-2 mt-2 overflow-hidden">
+                                <div className="w-full md:w-1/2 md:flex-1">
                                   <Label
                                     htmlFor={`qty-${product.id}`}
                                     className="text-xs"
@@ -747,10 +754,10 @@ export default function NewSupplierOrderPage() {
                                     type="number"
                                     min="1"
                                     defaultValue="1"
-                                    className="h-8"
+                                    className="h-8 w-full"
                                   />
                                 </div>
-                                <div className="flex-1">
+                                <div className="w-full md:w-1/2 md:flex-1">
                                   <Label
                                     htmlFor={`price-${product.id}`}
                                     className="text-xs"
@@ -763,7 +770,7 @@ export default function NewSupplierOrderPage() {
                                     min="0"
                                     step="0.01"
                                     defaultValue={product.price || 0}
-                                    className="h-8"
+                                    className="h-8 w-full"
                                   />
                                 </div>
                                 <div className="w-full flex justify-end mt-2">
@@ -815,17 +822,23 @@ export default function NewSupplierOrderPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
+                    <div className="rounded-md border overflow-x-auto max-w-full">
+                      <Table className="w-full min-w-max">
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead className="w-[100px]">
+                            <TableHead className="w-[30%] min-w-[120px]">
+                              Product
+                            </TableHead>
+                            <TableHead className="w-[15%] min-w-[80px]">
                               Quantity
                             </TableHead>
-                            <TableHead className="w-[120px]">Price</TableHead>
-                            <TableHead className="w-[120px]">Total</TableHead>
-                            <TableHead className="w-[60px]"></TableHead>
+                            <TableHead className="w-[20%] min-w-[80px]">
+                              Price
+                            </TableHead>
+                            <TableHead className="w-[20%] min-w-[80px]">
+                              Total
+                            </TableHead>
+                            <TableHead className="w-[15%] min-w-[40px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -852,7 +865,7 @@ export default function NewSupplierOrderPage() {
                                       parseInt(e.target.value) || 1
                                     )
                                   }
-                                  className="w-20"
+                                  className="w-full max-w-[80px]"
                                 />
                               </TableCell>
                               <TableCell>
@@ -867,7 +880,7 @@ export default function NewSupplierOrderPage() {
                                       parseFloat(e.target.value) || 0
                                     )
                                   }
-                                  className="w-24"
+                                  className="w-full max-w-[100px]"
                                 />
                               </TableCell>
                               <TableCell className="font-medium">
