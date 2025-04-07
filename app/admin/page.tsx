@@ -110,7 +110,7 @@ export default function AdminPage() {
   const [profitTimeframe, setProfitTimeframe] = useState("today");
   const [showProfit, setShowProfit] = useState(false);
 
-  // Calculate profit for different timeframes
+  // Calculate profit for different timeframes based on actual sales data
   const calculateProfitForTimeframe = (timeframe: string) => {
     let filteredOrders = [];
     const now = new Date();
@@ -154,14 +154,33 @@ export default function AdminPage() {
         filteredOrders = orders;
     }
 
-    // Calculate total revenue for filtered orders
-    const filteredRevenue = filteredOrders.reduce(
-      (sum, order) => sum + (order.total_amount || 0),
-      0
-    );
+    // Calculate total profit by summing up the profit from each sale
+    let totalProfit = 0;
 
-    // Calculate profit (30% of revenue)
-    return filteredRevenue * 0.3;
+    // Loop through each order
+    filteredOrders.forEach((order) => {
+      // If the order has order_items (sales), calculate profit for each item
+      if (order.order_items && order.order_items.length > 0) {
+        order.order_items.forEach((item: any) => {
+          // Calculate profit for this item (selling price - buying price) * quantity
+          // unit_price is the selling price stored in the sales table
+          const sellingPrice = item.unit_price || 0;
+          // product.price is the buying price stored in the products table
+          const buyingPrice = item.product?.price || 0;
+          const quantity = item.quantity || 0;
+          // Calculate profit without any tax deduction
+          const itemProfit = (sellingPrice - buyingPrice) * quantity;
+          totalProfit += itemProfit;
+        });
+      } else {
+        // If order_items is not available, estimate profit as 30% of the order total
+        // This is a fallback for older orders that might not have detailed item data
+        const estimatedProfit = (order.total_amount || 0) * 0.3;
+        totalProfit += estimatedProfit;
+      }
+    });
+
+    return totalProfit;
   };
 
   const totalProfit = calculateProfitForTimeframe(profitTimeframe);
