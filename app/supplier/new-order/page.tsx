@@ -662,6 +662,7 @@ export default function NewSupplierOrderPage() {
                     maxWidth: "100%",
                     overflowX: "hidden",
                     WebkitOverflowScrolling: "touch",
+                    position: "relative",
                   }}
                 >
                   {filteredProducts.length === 0 ? (
@@ -698,36 +699,37 @@ export default function NewSupplierOrderPage() {
                         return (
                           <div
                             key={product.id}
-                            className="p-3 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden"
+                            className="p-2 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden"
                           >
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <div className="font-medium">
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="truncate pr-2">
+                                <div className="font-medium text-sm">
                                   {product.name}
                                 </div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-muted-foreground truncate">
                                   {product.category || "Uncategorized"}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <div className="font-medium">
+                              <div className="text-right shrink-0">
+                                <div className="font-medium text-sm">
                                   {formatCurrency(product.price || 0)}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  Current Stock: {product.stock || 0}
+                                  Stock: {product.stock || 0}
                                 </div>
                               </div>
                             </div>
 
                             {existingItem ? (
-                              <div className="flex items-center justify-between mt-2 bg-accent/50 p-2 rounded-md">
-                                <span className="text-sm">
+                              <div className="flex items-center justify-between mt-2 bg-accent/50 p-2 rounded-md text-xs sm:text-sm">
+                                <span>
                                   Already in order (Qty: {existingItem.quantity}
                                   )
                                 </span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="h-7 px-2"
                                   onClick={() => {
                                     // Remove from order
                                     setOrderItems(
@@ -741,8 +743,8 @@ export default function NewSupplierOrderPage() {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-2 mt-2 overflow-hidden">
-                                <div className="w-full md:w-1/2 md:flex-1">
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <div>
                                   <Label
                                     htmlFor={`qty-${product.id}`}
                                     className="text-xs"
@@ -757,7 +759,7 @@ export default function NewSupplierOrderPage() {
                                     className="h-8 w-full"
                                   />
                                 </div>
-                                <div className="w-full md:w-1/2 md:flex-1">
+                                <div>
                                   <Label
                                     htmlFor={`price-${product.id}`}
                                     className="text-xs"
@@ -773,9 +775,10 @@ export default function NewSupplierOrderPage() {
                                     className="h-8 w-full"
                                   />
                                 </div>
-                                <div className="w-full flex justify-end mt-2">
+                                <div className="col-span-2 flex justify-end mt-2">
                                   <Button
                                     size="sm"
+                                    className="h-8 px-3"
                                     onClick={() => {
                                       const qtyInput = document.getElementById(
                                         `qty-${product.id}`
