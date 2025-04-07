@@ -159,6 +159,39 @@ export async function updateProduct(id: number | string, productData: any) {
 }
 
 export async function deleteProduct(id: number | string) {
+  // First check if the product is used in any sales
+  const { data: salesUsingProduct, error: checkError } = await supabase
+    .from('sales')
+    .select('id')
+    .eq('product_id', id);
+
+  if (checkError) {
+    console.error('Error checking sales using product:', checkError);
+    throw checkError;
+  }
+
+  // If sales are using this product, don't allow deletion
+  if (salesUsingProduct && salesUsingProduct.length > 0) {
+    throw new Error(`Cannot delete product because it's used in ${salesUsingProduct.length} sales/orders. Consider updating the stock to 0 instead.`);
+  }
+
+  // Also check supplier order items
+  const { data: supplierOrderItemsUsingProduct, error: checkSupplierError } = await supabase
+    .from('supplier_order_items')
+    .select('id')
+    .eq('product_id', id);
+
+  if (checkSupplierError) {
+    console.error('Error checking supplier order items using product:', checkSupplierError);
+    throw checkSupplierError;
+  }
+
+  // If supplier order items are using this product, don't allow deletion
+  if (supplierOrderItemsUsingProduct && supplierOrderItemsUsingProduct.length > 0) {
+    throw new Error(`Cannot delete product because it's used in ${supplierOrderItemsUsingProduct.length} supplier orders. Consider updating the stock to 0 instead.`);
+  }
+
+  // If no sales or supplier order items are using this product, proceed with deletion
   const { error } = await supabase
     .from('products')
     .delete()

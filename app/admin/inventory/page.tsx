@@ -25,6 +25,8 @@ import {
   History,
   Settings,
   Filter,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
@@ -47,6 +49,7 @@ interface Product {
   category?: string; // Virtual field for display only, not in database
   category_id: string; // UUID format, not a number
   image?: string;
+  // We'll use stock = 0 to indicate inactive status
   created_at?: string;
   // Fields that don't exist in the database:
   // - description
@@ -88,6 +91,10 @@ export default function InventoryPage() {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(
     null
   );
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    "delete" | "inactive" | "active" | null
+  >(null);
 
   // Fetch products and categories from Supabase
   useEffect(() => {
@@ -374,6 +381,67 @@ export default function InventoryPage() {
     }
   };
 
+  const handleMarkInactive = async (productId: number) => {
+    try {
+      // Update the product to set stock to 0 (which indicates inactive status)
+      await updateProduct(productId, {
+        stock: 0,
+      });
+
+      // Update local state
+      setProducts(
+        products.map((product) =>
+          product.id === productId ? { ...product, stock: 0 } : product
+        )
+      );
+
+      toast.success("Product marked as inactive (stock set to 0)");
+      setConfirmDialogOpen(false);
+    } catch (error) {
+      console.error("Error marking product as inactive:", error);
+      toast.error("Failed to mark product as inactive");
+    }
+  };
+
+  const handleMarkActive = async (productId: number) => {
+    try {
+      // Get the current product
+      const product = products.find((p) => p.id === productId);
+      if (!product) {
+        toast.error("Product not found");
+        return;
+      }
+
+      // Ask for the new stock quantity
+      const newStock = window.prompt("Enter the new stock quantity:", "1");
+      if (newStock === null) {
+        // User cancelled the prompt
+        setConfirmDialogOpen(false);
+        return;
+      }
+
+      const stockValue = parseInt(newStock, 10) || 1;
+
+      // Update the product to set stock to the new value
+      await updateProduct(productId, {
+        stock: stockValue,
+      });
+
+      // Update local state
+      setProducts(
+        products.map((p) =>
+          p.id === productId ? { ...p, stock: stockValue } : p
+        )
+      );
+
+      toast.success(`Product marked as active with stock set to ${stockValue}`);
+      setConfirmDialogOpen(false);
+    } catch (error) {
+      console.error("Error marking product as active:", error);
+      toast.error("Failed to mark product as active");
+    }
+  };
+
   const handleDeleteProduct = async (productId: number) => {
     try {
       // Delete from Supabase
@@ -383,9 +451,47 @@ export default function InventoryPage() {
       setProducts(products.filter((product) => product.id !== productId));
 
       toast.success("Product deleted successfully");
-    } catch (error) {
+      setConfirmDialogOpen(false);
+    } catch (error: any) {
       console.error("Error deleting product:", error);
-      toast.error("Failed to delete product");
+
+      // Check if it's our custom error about products being used in sales/orders
+      if (
+        error.message &&
+        (error.message.includes("Cannot delete product because it's used in") ||
+          error.message.includes("violates foreign key constraint"))
+      ) {
+        // Show a more user-friendly error message
+        toast.error(
+          <div>
+            <p>Cannot delete this product because it's used in orders.</p>
+            <p className="text-sm mt-1">
+              Consider marking it as inactive instead.
+            </p>
+          </div>
+        );
+
+        // Automatically open the confirm dialog to mark as inactive
+        setSelectedProductId(productId);
+        setConfirmAction("inactive");
+        setConfirmDialogOpen(true);
+      } else {
+        toast.error("Failed to delete product");
+      }
+
+      setConfirmDialogOpen(false);
+    }
+  };
+
+  const handleConfirmAction = () => {
+    if (!selectedProductId) return;
+
+    if (confirmAction === "delete") {
+      handleDeleteProduct(selectedProductId);
+    } else if (confirmAction === "inactive") {
+      handleMarkInactive(selectedProductId);
+    } else if (confirmAction === "active") {
+      handleMarkActive(selectedProductId);
     }
   };
 
@@ -475,7 +581,14 @@ export default function InventoryPage() {
                           MAD
                         </div>
                       </div>
-                      <div className="mt-1 text-sm">Stock: {product.stock}</div>
+                      <div className="mt-1 text-sm flex items-center gap-2">
+                        <span>Stock: {product.stock}</span>
+                        {product.stock === 0 && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                            Out of Stock
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button
@@ -494,11 +607,39 @@ export default function InventoryPage() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
+                      {/* Toggle active/inactive button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-amber-500"
+                        onClick={() => {
+                          setSelectedProductId(product.id);
+                          setConfirmAction(
+                            product.stock === 0 ? "active" : "inactive"
+                          );
+                          setConfirmDialogOpen(true);
+                        }}
+                        title={
+                          product.stock === 0
+                            ? "Mark as active (add stock)"
+                            : "Mark as inactive (set stock to 0)"
+                        }
+                      >
+                        {product.stock === 0 ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive"
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => {
+                          setSelectedProductId(product.id);
+                          setConfirmAction("delete");
+                          setConfirmDialogOpen(true);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -818,6 +959,46 @@ export default function InventoryPage() {
               Cancel
             </Button>
             <Button onClick={handleSellProduct}>Confirm Sale</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmAction === "delete"
+                ? "Delete Product"
+                : confirmAction === "inactive"
+                ? "Set Stock to Zero"
+                : "Add Stock to Product"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction === "delete"
+                ? "Are you sure you want to delete this product? This action cannot be undone."
+                : confirmAction === "inactive"
+                ? "This product's stock will be set to 0, making it unavailable for new orders."
+                : "You'll be prompted to enter a new stock quantity for this product."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={confirmAction === "delete" ? "destructive" : "default"}
+              onClick={handleConfirmAction}
+            >
+              {confirmAction === "delete"
+                ? "Delete"
+                : confirmAction === "inactive"
+                ? "Set to Zero"
+                : "Add Stock"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

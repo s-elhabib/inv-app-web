@@ -15,7 +15,7 @@ export const useAuth = create<AuthState>((set) => ({
   login: async (email, password) => {
     // Mock authentication with different roles based on email
     let role = 'admin';
-    let name = 'John Doe';
+    let name = 'Admin';
 
     if (email === 'supplier@admin.com' && password === 'psw2551') {
       role = 'supplier';
