@@ -11,9 +11,8 @@ import {
   ShoppingBag,
   History,
   Settings,
-  TrendingUp,
-  TrendingDown,
   BarChart,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -26,7 +25,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { getClients, getProducts, getOrders } from "@/lib/supabase";
 import { format, subDays, startOfDay, endOfDay, parseISO } from "date-fns";
@@ -57,24 +55,16 @@ export default function AdminPage() {
       case "today":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
-          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+          return (
+            orderDate >= startOfDay(now) && orderDate <= endOfDay(now)
+          );
         });
         break;
       case "week":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 7)) &&
-            orderDate <= endOfDay(now)
-          );
-        });
-        break;
-      case "15days":
-        filteredOrders = orders.filter((order) => {
-          const orderDate = parseISO(order.created_at);
-          return (
-            orderDate >= startOfDay(subDays(now, 15)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 7)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -82,12 +72,10 @@ export default function AdminPage() {
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 30)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 30)) && orderDate <= endOfDay(now)
           );
         });
         break;
-      case "all":
       default:
         filteredOrders = orders;
     }
@@ -99,18 +87,17 @@ export default function AdminPage() {
     );
   };
 
-  const totalRevenue = calculateRevenueForTimeframe(revenueTimeframe);
-
   // Calculate inventory value
-  const totalInventoryValue = products.reduce((sum, product) => {
-    return sum + (product.price * product.stock || 0);
-  }, 0);
+  const totalInventoryValue = products.reduce(
+    (sum, product) => sum + (product.price || 0) * (product.stock || 0),
+    0
+  );
 
-  // Calculate profit based on timeframe
-  const [profitTimeframe, setProfitTimeframe] = useState("today");
+  // Show/hide profit
   const [showProfit, setShowProfit] = useState(false);
+  const [profitTimeframe, setProfitTimeframe] = useState("today");
 
-  // Calculate profit for different timeframes
+  // Calculate profit for different timeframes (30% of revenue)
   const calculateProfitForTimeframe = (timeframe: string) => {
     let filteredOrders = [];
     const now = new Date();
@@ -120,15 +107,16 @@ export default function AdminPage() {
       case "today":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
-          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+          return (
+            orderDate >= startOfDay(now) && orderDate <= endOfDay(now)
+          );
         });
         break;
       case "week":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 7)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 7)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -136,8 +124,7 @@ export default function AdminPage() {
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 15)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 15)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -145,8 +132,7 @@ export default function AdminPage() {
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 30)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 30)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -201,15 +187,16 @@ export default function AdminPage() {
       case "today":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
-          return orderDate >= startOfDay(now) && orderDate <= endOfDay(now);
+          return (
+            orderDate >= startOfDay(now) && orderDate <= endOfDay(now)
+          );
         });
         break;
       case "week":
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 7)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 7)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -217,8 +204,7 @@ export default function AdminPage() {
         filteredOrders = orders.filter((order) => {
           const orderDate = parseISO(order.created_at);
           return (
-            orderDate >= startOfDay(subDays(now, 30)) &&
-            orderDate <= endOfDay(now)
+            orderDate >= startOfDay(subDays(now, 30)) && orderDate <= endOfDay(now)
           );
         });
         break;
@@ -226,275 +212,353 @@ export default function AdminPage() {
         filteredOrders = orders;
     }
 
-    // Group by date and sum amounts
-    const groupedData: { [key: string]: number } = {};
-
-    filteredOrders.forEach((order) => {
+    // Group orders by date
+    const groupedOrders = filteredOrders.reduce((acc, order) => {
       const date = format(parseISO(order.created_at), "MMM dd");
-      if (!groupedData[date]) {
-        groupedData[date] = 0;
+      if (!acc[date]) {
+        acc[date] = 0;
       }
-      groupedData[date] += order.total_amount || 0;
-    });
+      acc[date] += order.total_amount || 0;
+      return acc;
+    }, {});
 
-    // Convert to array format for chart
-    const chartData = Object.keys(groupedData).map((date) => ({
+    // Convert to chart data format
+    const data = Object.keys(groupedOrders).map((date) => ({
       name: date,
-      value: groupedData[date],
+      value: groupedOrders[date],
     }));
 
-    setChartData(
-      chartData.length > 0 ? chartData : [{ name: "No Data", value: 0 }]
-    );
+    setChartData(data);
   };
 
-  // Format numbers for display
+  // Format currency
   const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M MAD`;
-    } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}k MAD`;
-    } else {
-      return `${value.toFixed(2)} MAD`;
-    }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "MAD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
-
-  const stats = [
-    {
-      title: "Total Clients",
-      value: totalClients,
-      icon: Users,
-      trend: "+100%",
-      trendUp: true,
-    },
-    {
-      title: "Total Products",
-      value: totalProducts,
-      icon: Package,
-      trend: "+100%",
-      trendUp: true,
-    },
-    {
-      title: "Total Revenue(ROSITA)",
-      value: formatCurrency(totalRevenue),
-      icon: DollarSign,
-      trend: "",
-      // trendUp: false,
-      timeframe: revenueTimeframe,
-      setTimeframe: setRevenueTimeframe,
-    },
-    {
-      title: "Total Orders",
-      value: totalOrders,
-      icon: ShoppingCart,
-      trend: "-8%",
-      trendUp: false,
-    },
-  ];
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pb-16 bg-background">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <div className="container mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8 pb-20">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Admin Dashboard</h2>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        {stats.map((stat, index) => (
-          <Card key={index} className="overflow-hidden shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-start">
-                <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-                  <stat.icon className="h-6 w-6 text-accent-foreground" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <p className="text-muted-foreground mb-2">{stat.title}</p>
-              {stat.setTimeframe ? (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <Button
-                    variant={stat.timeframe === "today" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => stat.setTimeframe("today")}
-                    className="text-xs h-7 rounded-full"
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant={stat.timeframe === "week" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => stat.setTimeframe("week")}
-                    className="text-xs h-7 rounded-full"
-                  >
-                    This Week
-                  </Button>
-                  <Button
-                    variant={
-                      stat.timeframe === "15days" ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => stat.setTimeframe("15days")}
-                    className="text-xs h-7 rounded-full"
-                  >
-                    15 Days
-                  </Button>
-                  <Button
-                    variant={stat.timeframe === "month" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => stat.setTimeframe("month")}
-                    className="text-xs h-7 rounded-full"
-                  >
-                    This Month
-                  </Button>
-                  <Button
-                    variant={stat.timeframe === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => stat.setTimeframe("all")}
-                    className="text-xs h-7 rounded-full"
-                  >
-                    All Time
-                  </Button>
-                </div>
-              ) : (
-                <p
-                  className={cn(
-                    "flex items-center text-xs",
-                    stat.trendUp ? "text-green-500" : "text-red-500"
-                  )}
-                >
-                  {stat.trendUp ? (
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="mr-1 h-3 w-3" />
-                  )}
-                  {stat.trend}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Total Clients
                 </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                <p className="text-lg sm:text-2xl font-bold">{totalClients}</p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 dark:text-blue-300" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Total Products
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">{totalProducts}</p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 dark:text-green-300" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Total Orders
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">{totalOrders}</p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 dark:text-orange-300" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Revenue
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  {formatCurrency(calculateRevenueForTimeframe(revenueTimeframe))}
+                </p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500 dark:text-purple-300" />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
+              <Button
+                variant={revenueTimeframe === "today" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRevenueTimeframe("today")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Today
+              </Button>
+              <Button
+                variant={revenueTimeframe === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRevenueTimeframe("week")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Week
+              </Button>
+              <Button
+                variant={revenueTimeframe === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRevenueTimeframe("month")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Month
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Total Inventory Value Card */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-start">
-            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-              <Box className="h-6 w-6 text-accent-foreground" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold mb-1">
-            {formatCurrency(totalInventoryValue)}
-          </div>
-          <p className="text-muted-foreground mb-2">
-            Total Inventory Value(RAS LML)
-          </p>
-          <p className="flex items-center text-xs text-green-500">
-            {/* <TrendingUp className="mr-1 h-3 w-3" /> */}
-          </p>
-        </CardContent>
-      </Card>
+      {/* Quick Actions */}
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-lg sm:text-xl font-semibold">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Link href="/admin/new-order">
+            <Card className="h-full hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 sm:block">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center sm:mb-4">
+                    <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 dark:text-green-300" />
+                  </div>
+                  <div className="sm:mt-0">
+                    <h3 className="font-medium text-base sm:text-lg sm:mb-2">New Order</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground sm:mb-4 flex-grow hidden sm:block">
+                      Create a new customer order
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm text-primary mt-2 sm:mt-0">
+                  <span>Get started</span>
+                  <ArrowRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/inventory">
+            <Card className="h-full hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 sm:block">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center sm:mb-4">
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 dark:text-blue-300" />
+                  </div>
+                  <div className="sm:mt-0">
+                    <h3 className="font-medium text-base sm:text-lg sm:mb-2">Inventory</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground sm:mb-4 flex-grow hidden sm:block">
+                      Manage your product inventory
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm text-primary mt-2 sm:mt-0">
+                  <span>View inventory</span>
+                  <ArrowRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/orders">
+            <Card className="h-full hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 sm:block">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center sm:mb-4">
+                    <History className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 dark:text-orange-300" />
+                  </div>
+                  <div className="sm:mt-0">
+                    <h3 className="font-medium text-base sm:text-lg sm:mb-2">Order History</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground sm:mb-4 flex-grow hidden sm:block">
+                      View and manage past orders
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm text-primary mt-2 sm:mt-0">
+                  <span>View orders</span>
+                  <ArrowRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/settings">
+            <Card className="h-full hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 sm:block">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center sm:mb-4">
+                    <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500 dark:text-purple-300" />
+                  </div>
+                  <div className="sm:mt-0">
+                    <h3 className="font-medium text-base sm:text-lg sm:mb-2">Settings</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground sm:mb-4 flex-grow hidden sm:block">
+                      Configure system settings
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center text-xs sm:text-sm text-primary mt-2 sm:mt-0">
+                  <span>Manage settings</span>
+                  <ArrowRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      </div>
 
-      {/* Total Profit Card */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
-              <BarChart className="h-6 w-6 text-accent-foreground" />
+      {/* Profit and Inventory Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        {/* Total Inventory Value Card */}
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Inventory Value
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  {formatCurrency(totalInventoryValue)}
+                </p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center">
+                <Box className="h-4 w-4 sm:h-5 sm:w-5 text-teal-500 dark:text-teal-300" />
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowProfit(!showProfit)}
-              className="h-8 w-8"
-            >
-              {showProfit ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                >
-                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                  <line x1="2" x2="22" y1="2" y2="22" />
-                </svg>
-              )}
-            </Button>
-          </div>
-          <div className="text-3xl font-bold mb-1">
-            {showProfit ? formatCurrency(totalProfit) : "****"}
-          </div>
-          <p className="text-muted-foreground mb-4">Total Profit</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={profitTimeframe === "today" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setProfitTimeframe("today")}
-              className="text-xs h-8 rounded-full"
-            >
-              Today
-            </Button>
-            <Button
-              variant={profitTimeframe === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setProfitTimeframe("week")}
-              className="text-xs h-8 rounded-full"
-            >
-              This Week
-            </Button>
-            <Button
-              variant={profitTimeframe === "15days" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setProfitTimeframe("15days")}
-              className="text-xs h-8 rounded-full"
-            >
-              15 Days
-            </Button>
-            <Button
-              variant={profitTimeframe === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setProfitTimeframe("month")}
-              className="text-xs h-8 rounded-full"
-            >
-              This Month
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Total Profit Card */}
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col">
+            <div className="flex justify-between items-start">
+              <div className="mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
+                  Total Profit
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowProfit(!showProfit)}
+                    className="h-5 w-5 p-0"
+                  >
+                    {showProfit ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3 w-3"
+                      >
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3 w-3"
+                      >
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                        <line x1="2" x2="22" y1="2" y2="22" />
+                      </svg>
+                    )}
+                  </Button>
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  {showProfit ? formatCurrency(totalProfit) : "****"}
+                </p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                <BarChart className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 dark:text-amber-300" />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
+              <Button
+                variant={profitTimeframe === "today" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProfitTimeframe("today")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Today
+              </Button>
+              <Button
+                variant={profitTimeframe === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProfitTimeframe("week")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Week
+              </Button>
+              <Button
+                variant={profitTimeframe === "15days" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProfitTimeframe("15days")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                15 Days
+              </Button>
+              <Button
+                variant={profitTimeframe === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProfitTimeframe("month")}
+                className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
+              >
+                Month
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Revenue Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Revenue Over Time</CardTitle>
-          <div className="flex space-x-2">
+          <CardTitle className="text-lg sm:text-xl">Revenue Over Time</CardTitle>
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             <Button
               variant={selectedTimeframe === "today" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("today")}
-              className="text-xs h-8"
+              className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
             >
               Today
             </Button>
@@ -502,33 +566,25 @@ export default function AdminPage() {
               variant={selectedTimeframe === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("week")}
-              className="text-xs h-8"
+              className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
             >
-              This Week
+              Week
             </Button>
             <Button
               variant={selectedTimeframe === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("month")}
-              className="text-xs h-8"
+              className="text-xs h-6 sm:h-7 px-2 sm:px-3 rounded-full"
             >
-              15 Days
-            </Button>
-            <Button
-              variant={selectedTimeframe === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedTimeframe("all")}
-              className="text-xs h-8"
-            >
-              This Month
+              Month
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[200px] sm:h-[300px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
-                <p>Loading chart data...</p>
+                <p className="text-sm">Loading chart data...</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
