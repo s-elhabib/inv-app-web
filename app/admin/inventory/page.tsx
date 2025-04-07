@@ -19,11 +19,6 @@ import {
   Search,
   Edit,
   Trash2,
-  ShoppingBag,
-  Home,
-  Package,
-  History,
-  Settings,
   Filter,
   Eye,
   EyeOff,
@@ -850,54 +845,7 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
-        <Link href="/admin" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">Dashboard</span>
-          </Button>
-        </Link>
-        <Link href="/admin/new-order" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span className="text-xs">New Order</span>
-          </Button>
-        </Link>
-        <Link href="/admin/inventory" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-primary"
-          >
-            <Package className="h-5 w-5" />
-            <span className="text-xs">Inventory</span>
-          </Button>
-        </Link>
-        <Link href="/admin/orders" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <History className="h-5 w-5" />
-            <span className="text-xs">Orders History</span>
-          </Button>
-        </Link>
-        <Link href="/admin/settings" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="text-xs">Settings</span>
-          </Button>
-        </Link>
-      </div>
+      {/* Bottom navigation removed - now handled by layout */}
 
       {/* Sell Dialog */}
       <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>

@@ -22,11 +22,6 @@ import {
   Share2,
   Phone,
   Loader2,
-  Home,
-  ShoppingBag,
-  Package,
-  History,
-  Settings,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -56,6 +51,7 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  sellingPrice?: number;
   description?: string;
   stock?: number;
   category?: string;
@@ -151,7 +147,16 @@ export default function NewOrderPage() {
         );
       }
 
-      return [...currentCart, { ...product, quantity: 1 }];
+      // Use sellingPrice if available, otherwise fall back to price
+      return [
+        ...currentCart,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.sellingPrice || product.price,
+          quantity: 1,
+        },
+      ];
     });
   };
 
@@ -495,7 +500,7 @@ export default function NewOrderPage() {
                         <h3 className="font-medium">{product.name}</h3>
                         <div className="flex items-center gap-2">
                           <p className="text-sm text-orange-500">
-                            {product.price} MAD
+                            {product.sellingPrice || product.price} MAD
                           </p>
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
@@ -822,54 +827,7 @@ export default function NewOrderPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
-        <Link href="/admin" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">Dashboard</span>
-          </Button>
-        </Link>
-        <Link href="/admin/new-order" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-primary"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span className="text-xs">New Order</span>
-          </Button>
-        </Link>
-        <Link href="/admin/inventory" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Package className="h-5 w-5" />
-            <span className="text-xs">Inventory</span>
-          </Button>
-        </Link>
-        <Link href="/admin/orders" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <History className="h-5 w-5" />
-            <span className="text-xs">Orders History</span>
-          </Button>
-        </Link>
-        <Link href="/admin/settings" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="text-xs">Settings</span>
-          </Button>
-        </Link>
-      </div>
+      {/* Bottom navigation removed - now handled by layout */}
     </div>
   );
 }
