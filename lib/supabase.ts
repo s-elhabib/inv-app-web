@@ -13,7 +13,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function getProducts() {
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(`
+      *,
+      category:categories(name)
+    `)
     .order('name');
 
   if (error) {
@@ -21,13 +24,22 @@ export async function getProducts() {
     return [];
   }
 
-  return data;
+  // Process the data to add the category name directly to the product object
+  const processedData = data.map(product => ({
+    ...product,
+    category: product.category?.name || 'Uncategorized'
+  }));
+
+  return processedData;
 }
 
 export async function getProductById(id: number | string) {
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(`
+      *,
+      category:categories(name)
+    `)
     .eq('id', id)
     .single();
 
@@ -36,7 +48,15 @@ export async function getProductById(id: number | string) {
     return null;
   }
 
-  return data;
+  // Process the data to add the category name directly to the product object
+  if (data) {
+    return {
+      ...data,
+      category: data.category?.name || 'Uncategorized'
+    };
+  }
+
+  return null;
 }
 
 // Categories

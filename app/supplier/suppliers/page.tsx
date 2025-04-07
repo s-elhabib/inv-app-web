@@ -28,7 +28,9 @@ import {
   Mail,
   MapPin,
   User,
+  ClipboardList,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   getSuppliers,
@@ -63,7 +65,9 @@ export default function SuppliersPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(
+    null
+  );
 
   useEffect(() => {
     fetchSuppliers();
@@ -145,7 +149,7 @@ export default function SuppliersPage() {
 
     try {
       setIsSaving(true);
-      
+
       // Create a clean object with only the fields we want to update
       const supplierDataToUpdate = {
         name: editingSupplier.name,
@@ -160,7 +164,7 @@ export default function SuppliersPage() {
 
       // Close dialog
       setShowEditDialog(false);
-      
+
       // Refresh suppliers list
       fetchSuppliers();
     } catch (error) {
@@ -186,9 +190,12 @@ export default function SuppliersPage() {
       fetchSuppliers();
     } catch (error: any) {
       console.error("Error deleting supplier:", error);
-      
+
       // Check if it's our custom error about orders using the supplier
-      if (error.message && error.message.includes("Cannot delete supplier because it's used by")) {
+      if (
+        error.message &&
+        error.message.includes("Cannot delete supplier because it's used by")
+      ) {
         toast.error(error.message);
       } else {
         toast.error("Failed to delete supplier");
@@ -202,9 +209,14 @@ export default function SuppliersPage() {
   const filteredSuppliers = suppliers.filter(
     (supplier) =>
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (supplier.contact_person && supplier.contact_person.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (supplier.email && supplier.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (supplier.phone && supplier.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+      (supplier.contact_person &&
+        supplier.contact_person
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())) ||
+      (supplier.email &&
+        supplier.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (supplier.phone &&
+        supplier.phone.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -255,10 +267,8 @@ export default function SuppliersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact Person</TableHead>
+                    <TableHead>Supplier</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -268,11 +278,21 @@ export default function SuppliersPage() {
                       <TableCell className="font-medium">
                         {supplier.name}
                       </TableCell>
-                      <TableCell>{supplier.contact_person || "-"}</TableCell>
                       <TableCell>{supplier.phone || "-"}</TableCell>
-                      <TableCell>{supplier.email || "-"}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
+                          <Link
+                            href={`/supplier/orders?supplier=${supplier.id}`}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-blue-500 hover:text-blue-700"
+                              title="View supplier orders"
+                            >
+                              <ClipboardList className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -481,8 +501,8 @@ export default function SuppliersPage() {
           <DialogHeader>
             <DialogTitle>Delete Supplier</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this supplier? This action cannot be
-              undone. Suppliers that have orders cannot be deleted.
+              Are you sure you want to delete this supplier? This action cannot
+              be undone. Suppliers that have orders cannot be deleted.
             </DialogDescription>
           </DialogHeader>
           {supplierToDelete && (
