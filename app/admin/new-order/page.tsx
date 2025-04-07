@@ -645,12 +645,12 @@ export default function NewOrderPage() {
       {/* Mobile Cart Slide-up Panel */}
       {cart.length > 0 && (
         <div
-          className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg transition-transform duration-300 ease-in-out lg:hidden z-50 ${
+          className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg transition-transform duration-300 ease-in-out lg:hidden z-[100] ${
             showMobileCart ? "translate-y-0" : "translate-y-full"
           }`}
           ref={cartRef}
         >
-          <div className="p-4">
+          <div className="p-4 pb-20">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4" />
@@ -744,7 +744,7 @@ export default function NewOrderPage() {
       {/* Floating cart button for mobile - visible when cart has items and mobile cart is closed */}
       {cart.length > 0 && !showMobileCart && (
         <Button
-          className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg lg:hidden z-40 flex items-center justify-center"
+          className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg lg:hidden z-[90] flex items-center justify-center"
           onClick={() => setShowMobileCart(true)}
         >
           <div className="relative">
@@ -757,8 +757,12 @@ export default function NewOrderPage() {
       )}
 
       {/* Invoice generation dialog */}
-      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent>
+      <Dialog
+        open={showInvoiceDialog}
+        onOpenChange={setShowInvoiceDialog}
+        className="z-[110]"
+      >
+        <DialogContent className="z-[110] mb-16 sm:mb-0">
           <DialogHeader>
             <DialogTitle>Generate Invoice</DialogTitle>
             <DialogDescription>
