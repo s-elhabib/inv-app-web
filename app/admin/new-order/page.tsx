@@ -124,27 +124,66 @@ export default function NewOrderPage() {
   );
 
   const addToCart = (product: Product) => {
+    // Check if product has stock available
+    if (product.stock <= 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
+
     setCart((currentCart) => {
       const existingItem = currentCart.find((item) => item.id === product.id);
+
       if (existingItem) {
+        // Check if adding one more would exceed available stock
+        if (existingItem.quantity >= product.stock) {
+          toast.error(
+            `Cannot add more ${product.name}. Only ${product.stock} available in stock.`
+          );
+          return currentCart;
+        }
+
         return currentCart.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
+
       return [...currentCart, { ...product, quantity: 1 }];
     });
   };
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart((currentCart) =>
-      currentCart.map((item) =>
+    setCart((currentCart) => {
+      // If decreasing quantity, no need to check stock
+      if (delta < 0) {
+        return currentCart.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+            : item
+        );
+      }
+
+      // If increasing quantity, check stock availability
+      const item = currentCart.find((item) => item.id === productId);
+      if (item) {
+        // Find the product in the products array to get current stock
+        const product = products.find((p) => p.id === productId);
+
+        if (product && item.quantity >= product.stock) {
+          toast.error(
+            `Cannot add more ${product.name}. Only ${product.stock} available in stock.`
+          );
+          return currentCart;
+        }
+      }
+
+      return currentCart.map((item) =>
         item.id === productId
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+          ? { ...item, quantity: item.quantity + delta }
           : item
-      )
-    );
+      );
+    });
   };
 
   const removeFromCart = (productId: string) => {
@@ -167,6 +206,36 @@ export default function NewOrderPage() {
   const handleGenerateInvoice = async () => {
     if (!selectedClient) {
       toast.error("Please select a client");
+      return;
+    }
+
+    // Check if there's enough stock for all items in the cart
+    let hasInsufficientStock = false;
+    const stockIssues = [];
+
+    for (const cartItem of cart) {
+      const product = products.find((p) => p.id === cartItem.id);
+      if (product && cartItem.quantity > product.stock) {
+        hasInsufficientStock = true;
+        stockIssues.push(
+          `${product.name}: Ordered ${cartItem.quantity}, only ${product.stock} in stock`
+        );
+      }
+    }
+
+    if (hasInsufficientStock) {
+      toast.error(
+        <div>
+          <p>Insufficient stock for some items:</p>
+          <ul className="list-disc pl-4 mt-2">
+            {stockIssues.map((issue, index) => (
+              <li key={index} className="text-sm">
+                {issue}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
       return;
     }
 
@@ -353,14 +422,31 @@ export default function NewOrderPage() {
                     >
                       <div>
                         <h3 className="font-medium">{product.name}</h3>
-                        <p className="text-sm text-orange-500">
-                          {product.price} MAD
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-orange-500">
+                            {product.price} MAD
+                          </p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              product.stock > 0
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                            }`}
+                          >
+                            {product.stock > 0
+                              ? `${product.stock} in stock`
+                              : "Out of stock"}
+                          </span>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => addToCart(product)}
+                        disabled={product.stock <= 0}
+                        title={
+                          product.stock <= 0 ? "Out of stock" : "Add to cart"
+                        }
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -401,9 +487,33 @@ export default function NewOrderPage() {
                         >
                           <div className="flex-1">
                             <h3 className="font-medium">{item.name}</h3>
-                            <p className="text-sm text-orange-500">
-                              {item.price} MAD
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-orange-500">
+                                {item.price} MAD
+                              </p>
+                              {/* Find the product in the products array to get current stock */}
+                              {(() => {
+                                const product = products.find(
+                                  (p) => p.id === item.id
+                                );
+                                const remainingStock = product
+                                  ? product.stock - item.quantity
+                                  : 0;
+                                return (
+                                  <span
+                                    className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                      remainingStock > 0
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                    }`}
+                                  >
+                                    {remainingStock > 0
+                                      ? `${remainingStock} left`
+                                      : "Last items"}
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -487,7 +597,31 @@ export default function NewOrderPage() {
                 >
                   <div className="flex-1">
                     <h3 className="font-medium">{item.name}</h3>
-                    <p className="text-sm text-orange-500">{item.price} MAD</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-orange-500">
+                        {item.price} MAD
+                      </p>
+                      {/* Find the product in the products array to get current stock */}
+                      {(() => {
+                        const product = products.find((p) => p.id === item.id);
+                        const remainingStock = product
+                          ? product.stock - item.quantity
+                          : 0;
+                        return (
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              remainingStock > 0
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                            }`}
+                          >
+                            {remainingStock > 0
+                              ? `${remainingStock} left`
+                              : "Last items"}
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
