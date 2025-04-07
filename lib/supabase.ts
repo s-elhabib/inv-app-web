@@ -24,7 +24,7 @@ export async function getProducts() {
   return data;
 }
 
-export async function getProductById(id: number) {
+export async function getProductById(id: number | string) {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -142,7 +142,7 @@ export async function createProduct(productData: any) {
   return data;
 }
 
-export async function updateProduct(id: number, productData: any) {
+export async function updateProduct(id: number | string, productData: any) {
   const { data, error } = await supabase
     .from('products')
     .update(productData)
@@ -158,7 +158,7 @@ export async function updateProduct(id: number, productData: any) {
   return data;
 }
 
-export async function deleteProduct(id: number) {
+export async function deleteProduct(id: number | string) {
   const { error } = await supabase
     .from('products')
     .delete()

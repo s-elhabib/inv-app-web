@@ -48,6 +48,8 @@ import {
   getClients,
   createOrder,
   createOrderItems,
+  updateProduct,
+  getProductById,
 } from "@/lib/supabase";
 
 interface Product {
@@ -67,7 +69,7 @@ export default function NewOrderPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
-  const [invoiceLanguage, setInvoiceLanguage] = useState<"en" | "ar">("en");
+  const [invoiceLanguage, setInvoiceLanguage] = useState<"en" | "ar">("ar");
   const [shareViaWhatsAppOption, setShareViaWhatsAppOption] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -266,6 +268,75 @@ export default function NewOrderPage() {
       }));
 
       await createOrderItems(orderItems);
+
+      // Update product stock for each item in the order
+      console.log("Starting to update product stock for order items...");
+      for (const item of cart) {
+        try {
+          console.log(
+            `Processing item: ${item.id} (${item.name}), quantity: ${item.quantity}`
+          );
+
+          // Find the product in our products array
+          const productToUpdate = products.find((p) => p.id === item.id);
+          console.log("Product from state:", productToUpdate);
+
+          if (productToUpdate && productToUpdate.stock !== undefined) {
+            // Calculate new stock (subtract the ordered quantity)
+            const newStock = Math.max(0, productToUpdate.stock - item.quantity);
+            console.log(
+              `Calculated new stock: ${newStock} (current: ${productToUpdate.stock}, ordered: ${item.quantity})`
+            );
+
+            // Get the current product from the database to ensure we have the latest stock
+            const currentProduct = await getProductById(item.id);
+            console.log("Current product from DB:", currentProduct);
+
+            if (currentProduct) {
+              // Recalculate with the latest stock value
+              const updatedStock = Math.max(
+                0,
+                currentProduct.stock - item.quantity
+              );
+              console.log(
+                `Recalculated stock with DB value: ${updatedStock} (DB stock: ${currentProduct.stock})`
+              );
+
+              // Update product stock in the database
+              const result = await updateProduct(item.id, {
+                stock: updatedStock,
+              });
+
+              console.log(`Stock update result:`, result);
+              console.log(
+                `Updated stock for product ${productToUpdate.name} from ${currentProduct.stock} to ${updatedStock}`
+              );
+
+              // Show a toast notification for each product update
+              toast.success(
+                `Updated stock for ${productToUpdate.name}: ${currentProduct.stock} → ${updatedStock}`
+              );
+            } else {
+              console.error(`Could not find product ${item.id} in database`);
+              toast.error(`Failed to update stock for ${productToUpdate.name}`);
+            }
+          } else {
+            console.warn(
+              `Product ${item.id} not found in local state or has no stock property`
+            );
+          }
+        } catch (updateError) {
+          console.error(
+            `Error updating stock for product ${item.id}:`,
+            updateError
+          );
+          toast.error(
+            `Error updating stock for product ${item.name || item.id}`
+          );
+          // Continue with other products even if one fails
+        }
+      }
+      console.log("Finished updating product stock for all items.");
 
       // Create order object for invoice
       const order: Order = {
@@ -701,12 +772,12 @@ export default function NewOrderPage() {
                 className="flex space-x-4"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="en" id="lang-en" />
-                  <Label htmlFor="lang-en">English</Label>
-                </div>
-                <div className="flex items-center space-x-2">
                   <RadioGroupItem value="ar" id="lang-ar" />
                   <Label htmlFor="lang-ar">Arabic</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="en" id="lang-en" />
+                  <Label htmlFor="lang-en">English</Label>
                 </div>
               </RadioGroup>
             </div>

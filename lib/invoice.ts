@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 export const generateInvoiceHTML = (
   order: Order,
   items: CartItem[],
-  language: 'en' | 'ar' = 'en'
+  language: 'en' | 'ar' = 'ar'
 ): string => {
   const isArabic = language === 'ar';
   const dir = isArabic ? 'rtl' : 'ltr';
@@ -167,7 +167,7 @@ export const generateInvoiceHTML = (
 export const generateAndDownloadInvoice = async (
   order: Order,
   items: CartItem[],
-  language: 'en' | 'ar' = 'en'
+  language: 'en' | 'ar' = 'ar'
 ): Promise<void> => {
   // Generate HTML
   const html = generateInvoiceHTML(order, items, language);

@@ -87,7 +87,7 @@ export default function OrderDetailPage({
           createdAt: order.created_at,
         },
         cartItems,
-        "en"
+        "ar"
       );
 
       toast.success("Invoice generated successfully");

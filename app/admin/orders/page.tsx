@@ -131,7 +131,7 @@ export default function OrdersHistoryPage() {
           createdAt: order.created_at,
         },
         orderItems,
-        "en"
+        "ar"
       );
 
       toast.success("Invoice generated successfully");

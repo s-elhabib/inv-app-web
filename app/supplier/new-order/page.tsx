@@ -44,7 +44,7 @@ import {
   getCategories,
   createSupplierOrder,
   createSupplierOrderItems,
-  addProduct,
+  createProduct,
   updateProduct,
 } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -253,7 +253,7 @@ export default function NewSupplierOrderPage() {
       };
 
       // Save the new product
-      const savedProduct = await addProduct(productToSave);
+      const savedProduct = await createProduct(productToSave);
 
       // Add the new product to the products list
       const productWithCategory = {
