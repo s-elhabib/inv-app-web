@@ -128,9 +128,15 @@ export async function deleteCategory(id: string) {
 }
 
 export async function createProduct(productData: any) {
+  // Ensure image field has a default value if not provided
+  const productWithImage = {
+    ...productData,
+    image: productData.image || 'https://placehold.co/400x300?text=Product'
+  };
+
   const { data, error } = await supabase
     .from('products')
-    .insert(productData)
+    .insert(productWithImage)
     .select()
     .single();
 
@@ -143,6 +149,11 @@ export async function createProduct(productData: any) {
 }
 
 export async function updateProduct(id: number | string, productData: any) {
+  // If updating image to null, provide a default image
+  if (productData.hasOwnProperty('image') && !productData.image) {
+    productData.image = 'https://placehold.co/400x300?text=Product';
+  }
+
   const { data, error } = await supabase
     .from('products')
     .update(productData)
