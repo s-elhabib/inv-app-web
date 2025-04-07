@@ -45,6 +45,7 @@ import {
   createSupplierOrder,
   createSupplierOrderItems,
   addProduct,
+  updateProduct,
 } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -332,7 +333,9 @@ export default function NewSupplierOrderPage() {
       const orderData = {
         supplier_id: selectedSupplier.id,
         invoice_number: invoiceNumber,
-        invoice_images: invoiceImages.length > 0 ? invoiceImages : null,
+        // Store multiple images as a JSON string in the single invoice_image field
+        invoice_image:
+          invoiceImages.length > 0 ? JSON.stringify(invoiceImages) : null,
         total_amount: totalAmount,
         status: "pending",
         notes: notes,
@@ -352,7 +355,34 @@ export default function NewSupplierOrderPage() {
       await createSupplierOrderItems(orderItemsData);
 
       // Update product stock
-      // This would typically be done in a transaction or through a database trigger
+      for (const item of orderItems) {
+        try {
+          // Get current product data
+          const productToUpdate = products.find(
+            (p) => p.id === item.product_id
+          );
+
+          if (productToUpdate) {
+            // Calculate new stock
+            const newStock = productToUpdate.stock + item.quantity;
+
+            // Update product stock
+            await updateProduct(item.product_id, {
+              stock: newStock,
+            });
+
+            console.log(
+              `Updated stock for product ${productToUpdate.name} from ${productToUpdate.stock} to ${newStock}`
+            );
+          }
+        } catch (updateError) {
+          console.error(
+            `Error updating stock for product ${item.product_id}:`,
+            updateError
+          );
+          // Continue with other products even if one fails
+        }
+      }
 
       toast.success("Order created successfully");
 

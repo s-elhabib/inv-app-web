@@ -24,6 +24,21 @@ export async function getProducts() {
   return data;
 }
 
+export async function getProductById(id: number) {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching product ${id}:`, error);
+    return null;
+  }
+
+  return data;
+}
+
 // Categories
 export async function getCategories() {
   const { data, error } = await supabase

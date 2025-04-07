@@ -34,7 +34,12 @@ import {
   Eye,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSupplierOrderById, updateSupplierOrder } from "@/lib/supabase";
+import {
+  getSupplierOrderById,
+  updateSupplierOrder,
+  updateProduct,
+  getProductById,
+} from "@/lib/supabase";
 import { toast } from "sonner";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
@@ -107,9 +112,48 @@ export default function OrderDetailPage({
   const handleUpdateStatus = async () => {
     try {
       setIsSaving(true);
+
+      // Update the order status
       await updateSupplierOrder(order.id, { status: newStatus });
+
+      // If the status is changing to "received" and was previously not "received",
+      // update the inventory quantities
+      if (newStatus === "received" && order.status !== "received") {
+        // Process each order item to update inventory
+        for (const item of order.order_items) {
+          try {
+            // Get current product data
+            const productData = await getProductById(item.product_id);
+
+            if (productData) {
+              // Calculate new stock by adding the ordered quantity
+              const newStock = productData.stock + item.quantity;
+
+              // Update product stock
+              await updateProduct(item.product_id, {
+                stock: newStock,
+              });
+
+              console.log(
+                `Updated stock for product ${productData.name} from ${productData.stock} to ${newStock}`
+              );
+            }
+          } catch (updateError) {
+            console.error(
+              `Error updating stock for product ${item.product_id}:`,
+              updateError
+            );
+            // Continue with other products even if one fails
+          }
+        }
+
+        toast.success("Order marked as received and inventory updated");
+      } else {
+        toast.success("Order status updated successfully");
+      }
+
+      // Update the local state
       setOrder({ ...order, status: newStatus });
-      toast.success("Order status updated successfully");
       setShowStatusDialog(false);
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -250,83 +294,102 @@ export default function OrderDetailPage({
               </div>
             )}
 
-            {/* Handle both legacy single image and new multiple images */}
-            {(order.invoice_image ||
-              (order.invoice_images && order.invoice_images.length > 0)) && (
+            {/* Handle invoice image(s) */}
+            {order.invoice_image && (
               <div className="mt-4 print:hidden">
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm font-medium">Invoice Images</p>
                   <span className="text-xs text-muted-foreground">
-                    {order.invoice_images ? order.invoice_images.length : 1}{" "}
-                    image(s)
+                    {(() => {
+                      // Try to parse the invoice_image as JSON to see if it's an array of images
+                      try {
+                        const images = JSON.parse(order.invoice_image);
+                        return Array.isArray(images)
+                          ? `${images.length} image(s)`
+                          : "1 image";
+                      } catch (e) {
+                        // If it's not valid JSON, it's a single image URL
+                        return "1 image";
+                      }
+                    })()}
                   </span>
                 </div>
 
-                {order.invoice_image ? (
-                  // Legacy single image display
-                  <div
-                    className="relative border rounded-md overflow-hidden"
-                    style={{ maxHeight: "200px" }}
-                  >
-                    <img
-                      src={order.invoice_image}
-                      alt="Invoice"
-                      className="w-full h-auto object-cover cursor-pointer"
-                      onClick={() => {
-                        setSelectedImage(order.invoice_image);
-                        setShowImageDialog(true);
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="secondary"
-                        size="sm"
+                {(() => {
+                  // Try to parse the invoice_image as JSON to see if it's an array of images
+                  try {
+                    const images = JSON.parse(order.invoice_image);
+                    if (Array.isArray(images) && images.length > 0) {
+                      // It's a JSON array of images
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {images.map((image: string, index: number) => (
+                            <div
+                              key={index}
+                              className="relative border rounded-md overflow-hidden group cursor-pointer"
+                              onClick={() => {
+                                setSelectedImage(image);
+                                setShowImageDialog(true);
+                              }}
+                            >
+                              <img
+                                src={image}
+                                alt={`Invoice ${index + 1}`}
+                                className="w-full h-24 object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8 text-xs"
+                                >
+                                  <Eye className="mr-1 h-3 w-3" />
+                                  View
+                                </Button>
+                              </div>
+                              <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                  } catch (e) {
+                    // Not JSON, treat as a single image URL
+                  }
+
+                  // Default: single image display
+                  return (
+                    <div
+                      className="relative border rounded-md overflow-hidden"
+                      style={{ maxHeight: "200px" }}
+                    >
+                      <img
+                        src={order.invoice_image}
+                        alt="Invoice"
+                        className="w-full h-auto object-cover cursor-pointer"
                         onClick={() => {
                           setSelectedImage(order.invoice_image);
                           setShowImageDialog(true);
                         }}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Full Image
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // Multiple images display
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {order.invoice_images.map(
-                      (image: string, index: number) => (
-                        <div
-                          key={index}
-                          className="relative border rounded-md overflow-hidden group cursor-pointer"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => {
-                            setSelectedImage(image);
+                            setSelectedImage(order.invoice_image);
                             setShowImageDialog(true);
                           }}
                         >
-                          <img
-                            src={image}
-                            alt={`Invoice ${index + 1}`}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="h-8 text-xs"
-                            >
-                              <Eye className="mr-1 h-3 w-3" />
-                              View
-                            </Button>
-                          </div>
-                          <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                            {index + 1}
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Full Image
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </CardContent>
