@@ -387,7 +387,8 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="text-3xl font-bold mb-1">
-            {formatCurrency(totalInventoryValue)}
+            {/* {formatCurrency(totalInventoryValue)} */}
+            {totalInventoryValue} MAD
           </div>
           <p className="text-muted-foreground mb-2">
             Total Inventory Value(RAS LML)

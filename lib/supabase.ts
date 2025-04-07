@@ -429,7 +429,8 @@ export async function getOrders() {
     .from('orders')
     .select(`
       *,
-      client:clients(*)
+      client:clients(*),
+      order_items:sales(*, product:products(*))
     `)
     .order('created_at', { ascending: false });
 
