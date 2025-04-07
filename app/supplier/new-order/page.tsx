@@ -354,7 +354,7 @@ export default function NewSupplierOrderPage() {
 
       await createSupplierOrderItems(orderItemsData);
 
-      // Update product stock
+      // Update product stock and price if changed
       for (const item of orderItems) {
         try {
           // Get current product data
@@ -366,10 +366,33 @@ export default function NewSupplierOrderPage() {
             // Calculate new stock
             const newStock = productToUpdate.stock + item.quantity;
 
-            // Update product stock
-            await updateProduct(item.product_id, {
+            // Check if price has changed
+            const priceChanged = item.price !== productToUpdate.price;
+
+            // Prepare update data
+            const updateData: any = {
               stock: newStock,
-            });
+            };
+
+            // If price has changed, update it
+            if (priceChanged) {
+              updateData.price = item.price;
+              console.log(
+                `Updating price for product ${productToUpdate.name} from ${productToUpdate.price} to ${item.price}`
+              );
+
+              // Show toast notification about price update
+              toast.info(
+                `Updated price for ${
+                  productToUpdate.name
+                } from ${formatCurrency(
+                  productToUpdate.price
+                )} to ${formatCurrency(item.price)}`
+              );
+            }
+
+            // Update product in database
+            await updateProduct(item.product_id, updateData);
 
             console.log(
               `Updated stock for product ${productToUpdate.name} from ${productToUpdate.stock} to ${newStock}`
@@ -377,7 +400,7 @@ export default function NewSupplierOrderPage() {
           }
         } catch (updateError) {
           console.error(
-            `Error updating stock for product ${item.product_id}:`,
+            `Error updating product ${item.product_id}:`,
             updateError
           );
           // Continue with other products even if one fails

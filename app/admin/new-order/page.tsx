@@ -274,74 +274,77 @@ export default function NewOrderPage() {
 
       await createOrderItems(orderItems);
 
-      // Update product stock for each item in the order
-      console.log("Starting to update product stock for order items...");
+      // Update product stock and price for each item in the order
+      console.log(
+        "Starting to update product stock and price for order items..."
+      );
       for (const item of cart) {
         try {
           console.log(
-            `Processing item: ${item.id} (${item.name}), quantity: ${item.quantity}`
+            `Processing item: ${item.id} (${item.name}), quantity: ${item.quantity}, price: ${item.price}`
           );
 
           // Find the product in our products array
           const productToUpdate = products.find((p) => p.id === item.id);
           console.log("Product from state:", productToUpdate);
 
-          if (productToUpdate && productToUpdate.stock !== undefined) {
-            // Calculate new stock (subtract the ordered quantity)
-            const newStock = Math.max(0, productToUpdate.stock - item.quantity);
-            console.log(
-              `Calculated new stock: ${newStock} (current: ${productToUpdate.stock}, ordered: ${item.quantity})`
-            );
-
-            // Get the current product from the database to ensure we have the latest stock
+          if (productToUpdate) {
+            // Get the current product from the database to ensure we have the latest data
             const currentProduct = await getProductById(item.id);
             console.log("Current product from DB:", currentProduct);
 
             if (currentProduct) {
-              // Recalculate with the latest stock value
+              // Prepare updates object
+              const updates: any = {};
+
+              // Calculate new stock (subtract the ordered quantity)
               const updatedStock = Math.max(
                 0,
                 currentProduct.stock - item.quantity
               );
-              console.log(
-                `Recalculated stock with DB value: ${updatedStock} (DB stock: ${currentProduct.stock})`
-              );
+              updates.stock = updatedStock;
 
-              // Update product stock in the database
-              const result = await updateProduct(item.id, {
-                stock: updatedStock,
-              });
+              // Check if the price used in the order is different from the current selling price
+              const currentSellingPrice =
+                currentProduct.sellingPrice || currentProduct.price;
+              if (item.price !== currentSellingPrice) {
+                console.log(
+                  `Price change detected for ${productToUpdate.name}: ${currentSellingPrice} → ${item.price}`
+                );
+                // Update the selling price to the new price used in the order
+                updates.sellingPrice = item.price;
+              }
 
-              console.log(`Stock update result:`, result);
-              console.log(
-                `Updated stock for product ${productToUpdate.name} from ${currentProduct.stock} to ${updatedStock}`
-              );
+              // Update product in the database
+              const result = await updateProduct(item.id, updates);
+              console.log(`Product update result:`, result);
 
-              // Show a toast notification for each product update
-              toast.success(
-                `Updated stock for ${productToUpdate.name}: ${currentProduct.stock} → ${updatedStock}`
-              );
+              // Show toast notifications for updates
+              if (updatedStock !== currentProduct.stock) {
+                toast.success(
+                  `Updated stock for ${productToUpdate.name}: ${currentProduct.stock} → ${updatedStock}`
+                );
+              }
+
+              if (updates.sellingPrice !== undefined) {
+                toast.success(
+                  `Updated price for ${productToUpdate.name}: ${currentSellingPrice} → ${item.price} MAD`
+                );
+              }
             } else {
               console.error(`Could not find product ${item.id} in database`);
-              toast.error(`Failed to update stock for ${productToUpdate.name}`);
+              toast.error(`Failed to update product ${productToUpdate.name}`);
             }
           } else {
-            console.warn(
-              `Product ${item.id} not found in local state or has no stock property`
-            );
+            console.warn(`Product ${item.id} not found in local state`);
           }
         } catch (updateError) {
-          console.error(
-            `Error updating stock for product ${item.id}:`,
-            updateError
-          );
-          toast.error(
-            `Error updating stock for product ${item.name || item.id}`
-          );
+          console.error(`Error updating product ${item.id}:`, updateError);
+          toast.error(`Error updating product ${item.name || item.id}`);
           // Continue with other products even if one fails
         }
       }
-      console.log("Finished updating product stock for all items.");
+      console.log("Finished updating product stock and price for all items.");
 
       // Create order object for invoice
       const order: Order = {
