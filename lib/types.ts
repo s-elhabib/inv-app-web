@@ -39,7 +39,7 @@ export interface Order {
     quantity: number;
   }>;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  totalAmount: number;
+  totalAmount: number; // This is a display value, in the database it's stored as an integer
   createdAt: string;
 }
 
@@ -59,7 +59,7 @@ export interface SupplierOrder {
   supplier?: Supplier;
   invoice_number?: string;
   invoice_image?: string;
-  total_amount: number;
+  total_amount: number; // In the database, this is stored as an integer
   status: 'pending' | 'received';
   created_at: string;
   notes?: string;

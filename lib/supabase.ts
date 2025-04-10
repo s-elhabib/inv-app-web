@@ -700,9 +700,18 @@ export async function createSupplierOrder(orderData: any) {
 }
 
 export async function createSupplierOrderItems(items: any[]) {
+  // Ensure all numeric values are integers as required by the database
+  const processedItems = items.map(item => ({
+    supplier_order_id: item.supplier_order_id,
+    product_id: item.product_id,
+    quantity: Math.round(item.quantity),
+    price: Math.round(typeof item.price === 'string' ? parseFloat(item.price) : item.price),
+    total: Math.round(typeof item.total === 'string' ? parseFloat(item.total) : item.total)
+  }));
+
   const { data, error } = await supabase
     .from('supplier_order_items')
-    .insert(items)
+    .insert(processedItems)
     .select();
 
   if (error) {
@@ -758,14 +767,24 @@ export async function deleteSupplierOrder(id: string) {
 // Order Items (stored in sales table)
 export async function createOrderItems(items: any[]) {
   // Convert order_items format to sales table format
-  const salesItems = items.map(item => ({
-    order_id: item.order_id,
-    product_id: item.product_id,
-    client_id: item.client_id, // Use the client_id passed from the order
-    quantity: item.quantity,
-    unit_price: item.price,
-    amount: item.price * item.quantity
-  }));
+  // Ensure all numeric values are integers as required by the database
+  const salesItems = items.map(item => {
+    // Ensure price is a number
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+    // Ensure quantity is an integer
+    const quantity = Math.round(item.quantity);
+    // Calculate amount and round to integer
+    const amount = Math.round(price * quantity);
+
+    return {
+      order_id: item.order_id,
+      product_id: item.product_id,
+      client_id: item.client_id, // Use the client_id passed from the order
+      quantity: quantity,
+      unit_price: Math.round(price), // Round to integer
+      amount: amount
+    };
+  });
 
   const { data, error } = await supabase
     .from('sales')

@@ -58,6 +58,12 @@ interface Product {
   image?: string;
 }
 
+// Utility function to convert MAD to RIL (1 MAD = 20 RIL)
+const convertToRial = (madAmount: number): number => {
+  // Round to 2 decimal places to avoid floating point precision issues
+  return Math.round(madAmount * 20 * 100) / 100;
+};
+
 export default function NewOrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
@@ -250,10 +256,11 @@ export default function NewOrderPage() {
       setIsSaving(true);
 
       // Create order in Supabase
+      // Convert total_amount to integer (database expects integer)
       const orderData = {
         client_id: selectedClient.id,
         status: "completed",
-        total_amount: totalAmount,
+        total_amount: Math.round(totalAmount), // Round to nearest integer
       };
 
       // Save order to Supabase
@@ -504,6 +511,13 @@ export default function NewOrderPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm text-orange-500">
                             {product.sellingPrice || product.price} MAD
+                            <span className="text-gray-500 mx-1">|</span>
+                            <span className="text-gray-500">
+                              ريال{" "}
+                              {convertToRial(
+                                product.sellingPrice || product.price
+                              )}
+                            </span>
                           </p>
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
@@ -569,6 +583,10 @@ export default function NewOrderPage() {
                             <div className="flex items-center gap-2">
                               <p className="text-sm text-orange-500">
                                 {item.price} MAD
+                                <span className="text-gray-500 mx-1">|</span>
+                                <span className="text-gray-500">
+                                  ريال {convertToRial(item.price)}
+                                </span>
                               </p>
                               {/* Find the product in the products array to get current stock */}
                               {(() => {
@@ -626,7 +644,13 @@ export default function NewOrderPage() {
                     <div className="pt-4 border-t">
                       <div className="flex items-center justify-between font-medium">
                         <span>Total Amount:</span>
-                        <span>{totalAmount.toFixed(2)} MAD</span>
+                        <span>
+                          {totalAmount.toFixed(2)} MAD
+                          <span className="text-gray-500 mx-1">|</span>
+                          <span className="text-gray-500">
+                            ريال {convertToRial(totalAmount)}
+                          </span>
+                        </span>
                       </div>
                     </div>
                     <Button
@@ -679,6 +703,10 @@ export default function NewOrderPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-orange-500">
                         {item.price} MAD
+                        <span className="text-gray-500 mx-1">|</span>
+                        <span className="text-gray-500">
+                          ريال {convertToRial(item.price)}
+                        </span>
                       </p>
                       {/* Find the product in the products array to get current stock */}
                       {(() => {
@@ -733,7 +761,13 @@ export default function NewOrderPage() {
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between font-medium mb-4">
                 <span>Total Amount:</span>
-                <span>{totalAmount.toFixed(2)} MAD</span>
+                <span>
+                  {totalAmount.toFixed(2)} MAD
+                  <span className="text-gray-500 mx-1">|</span>
+                  <span className="text-gray-500">
+                    ريال {convertToRial(totalAmount)}
+                  </span>
+                </span>
               </div>
               <Button className="w-full" size="lg" onClick={handleCheckout}>
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -774,6 +808,23 @@ export default function NewOrderPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="border p-3 rounded-md bg-muted/50 mb-4">
+              <div className="text-sm font-medium mb-1">Order Summary:</div>
+              <div className="flex justify-between items-center">
+                <span>Total Amount:</span>
+                <span>
+                  {totalAmount.toFixed(2)} MAD
+                  <span className="text-gray-500 mx-1">|</span>
+                  <span className="text-gray-500">
+                    ريال {convertToRial(totalAmount)}
+                  </span>
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {cart.length} {cart.length === 1 ? "item" : "items"}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Invoice Language</Label>
               <RadioGroup

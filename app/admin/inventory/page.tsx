@@ -75,12 +75,14 @@ interface Category {
 
 // Utility function to convert MAD to RIL (1 MAD = 20 RIL)
 const convertToRial = (madAmount: number): number => {
-  return madAmount * 20;
+  // Round to 2 decimal places to avoid floating point precision issues
+  return Math.round(madAmount * 20 * 100) / 100;
 };
 
 // Utility function to convert RIL to MAD (20 RIL = 1 MAD)
 const convertToMad = (rialAmount: number): number => {
-  return rialAmount / 20;
+  // Round to 2 decimal places to avoid floating point precision issues
+  return Math.round((rialAmount / 20) * 100) / 100;
 };
 
 // Function to convert price based on selected currency
@@ -190,13 +192,31 @@ export default function InventoryPage() {
       }
 
       // Only include fields that exist in the database schema
-      // Convert string price values to numbers for saving, handling currency conversion if needed
-      let priceInMad =
-        newProduct.price === "" ? 0 : parseFloat(newProduct.price) || 0;
+      // Sanitize and convert string price values to numbers for saving
+
+      // Sanitize price input
+      const sanitizedPrice = newProduct.price.replace(/[^0-9.]/g, "");
+      const priceParts = sanitizedPrice.split(".");
+      const cleanPrice =
+        priceParts[0] +
+        (priceParts.length > 1 ? "." + priceParts.slice(1).join("") : "");
+
+      // Sanitize selling price input
+      const sanitizedSellingPrice = newProduct.sellingPrice.replace(
+        /[^0-9.]/g,
+        ""
+      );
+      const sellingPriceParts = sanitizedSellingPrice.split(".");
+      const cleanSellingPrice =
+        sellingPriceParts[0] +
+        (sellingPriceParts.length > 1
+          ? "." + sellingPriceParts.slice(1).join("")
+          : "");
+
+      // Convert to numbers
+      let priceInMad = cleanPrice === "" ? 0 : parseFloat(cleanPrice) || 0;
       let sellingPriceInMad =
-        newProduct.sellingPrice === ""
-          ? 0
-          : parseFloat(newProduct.sellingPrice) || 0;
+        cleanSellingPrice === "" ? 0 : parseFloat(cleanSellingPrice) || 0;
 
       // If price was entered in RIL, convert to MAD for database storage
       if (!isPriceInMad) {
@@ -275,15 +295,9 @@ export default function InventoryPage() {
       // For stock, convert to integer
       processedValue = value === "" ? 0 : parseInt(value, 10);
     } else if (name === "price" || name === "sellingPrice") {
-      // For price fields, keep as string but sanitize
-      // Remove any non-numeric characters except decimal point
-      const sanitizedValue = value.replace(/[^0-9.]/g, "");
-      // Ensure only one decimal point
-      const parts = sanitizedValue.split(".");
-      processedValue =
-        parts[0] + (parts.length > 1 ? "." + parts.slice(1).join("") : "");
-      // Allow empty value during editing
-      // Empty will be converted to 0 only when saving
+      // For price fields, just use the raw input value during typing
+      // This allows users to freely type, including decimal points
+      processedValue = value;
     } else if (name === "category_id") {
       // Keep category_id as string for UUID
       processedValue = value;
@@ -311,15 +325,9 @@ export default function InventoryPage() {
       // For stock, convert to integer
       processedValue = value === "" ? 0 : parseInt(value, 10);
     } else if (name === "price" || name === "sellingPrice") {
-      // For price fields, keep as string but sanitize
-      // Remove any non-numeric characters except decimal point
-      const sanitizedValue = value.replace(/[^0-9.]/g, "");
-      // Ensure only one decimal point
-      const parts = sanitizedValue.split(".");
-      processedValue =
-        parts[0] + (parts.length > 1 ? "." + parts.slice(1).join("") : "");
-      // Allow empty value during editing
-      // Empty will be converted to 0 only when saving
+      // For price fields, just use the raw input value during typing
+      // This allows users to freely type, including decimal points
+      processedValue = value;
     } else if (name === "category_id") {
       // Keep category_id as string for UUID
       processedValue = value;
@@ -342,8 +350,8 @@ export default function InventoryPage() {
       });
       setSelectedProductId(productId);
 
-      // Reset currency selection to default (RIL) when opening edit dialog
-      setIsEditPriceInMad(false);
+      // Always set currency to MAD when editing to show the actual database values
+      setIsEditPriceInMad(true);
 
       setEditDialogOpen(true);
     }
@@ -365,19 +373,34 @@ export default function InventoryPage() {
       }
 
       // Only include fields that exist in the database schema
-      // Convert string price values to numbers for saving, handling currency conversion if needed
-      let priceInMad =
-        editingProduct.price === "" ? 0 : parseFloat(editingProduct.price) || 0;
-      let sellingPriceInMad =
-        editingProduct.sellingPrice === ""
-          ? 0
-          : parseFloat(editingProduct.sellingPrice) || 0;
+      // Sanitize and convert string price values to numbers for saving
 
-      // If price was entered in RIL, convert to MAD for database storage
-      if (!isEditPriceInMad) {
-        priceInMad = convertToMad(priceInMad);
-        sellingPriceInMad = convertToMad(sellingPriceInMad);
-      }
+      // Sanitize price input
+      const sanitizedPrice = editingProduct.price.replace(/[^0-9.]/g, "");
+      const priceParts = sanitizedPrice.split(".");
+      const cleanPrice =
+        priceParts[0] +
+        (priceParts.length > 1 ? "." + priceParts.slice(1).join("") : "");
+
+      // Sanitize selling price input
+      const sanitizedSellingPrice = editingProduct.sellingPrice.replace(
+        /[^0-9.]/g,
+        ""
+      );
+      const sellingPriceParts = sanitizedSellingPrice.split(".");
+      const cleanSellingPrice =
+        sellingPriceParts[0] +
+        (sellingPriceParts.length > 1
+          ? "." + sellingPriceParts.slice(1).join("")
+          : "");
+
+      // Convert to numbers
+      let priceInMad = cleanPrice === "" ? 0 : parseFloat(cleanPrice) || 0;
+      let sellingPriceInMad =
+        cleanSellingPrice === "" ? 0 : parseFloat(cleanSellingPrice) || 0;
+
+      // Since we're always showing MAD in the edit form, no conversion is needed
+      // The checkbox is only for display purposes, we always store in MAD
 
       // If selling price is empty, use the price
       if (editingProduct.sellingPrice === "") {
@@ -793,6 +816,10 @@ export default function InventoryPage() {
             <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
               Fill in the details to add a new product to your inventory.
+              <div className="mt-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-md text-xs">
+                Note: All prices are stored in MAD in the database. The RIL
+                option is only for display purposes.
+              </div>
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -941,7 +968,13 @@ export default function InventoryPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>Update the product details.</DialogDescription>
+            <DialogDescription>
+              Update the product details.
+              <div className="mt-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-md text-xs">
+                Note: You are editing the actual MAD values stored in the
+                database. The RIL display option is only for convenience.
+              </div>
+            </DialogDescription>
           </DialogHeader>
           {editingProduct && (
             <div className="grid gap-4 py-4">
@@ -986,6 +1019,10 @@ export default function InventoryPage() {
                 <div className="col-span-3 space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-2">
+                      <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs">
+                        Editing in MAD (database values)
+                      </div>
+                      <div className="text-xs text-gray-500">Display as:</div>
                       <input
                         type="checkbox"
                         id="edit-price-currency"
@@ -1011,9 +1048,7 @@ export default function InventoryPage() {
                       pattern="[0-9]*(\.[0-9]+)?"
                       value={editingProduct.price}
                       onChange={handleEditInputChange}
-                      placeholder={`Enter price in ${
-                        isEditPriceInMad ? "MAD" : "RIL"
-                      }`}
+                      placeholder="Enter price in MAD"
                       className="flex-1"
                     />
                     {editingProduct.price &&
@@ -1030,8 +1065,6 @@ export default function InventoryPage() {
                         </div>
                       )}
                   </div>
-
-                 
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -1048,9 +1081,7 @@ export default function InventoryPage() {
                       pattern="[0-9]*(\.[0-9]+)?"
                       value={editingProduct.sellingPrice}
                       onChange={handleEditInputChange}
-                      placeholder={`Enter selling price in ${
-                        isEditPriceInMad ? "MAD" : "RIL"
-                      } (optional)`}
+                      placeholder="Enter selling price in MAD (optional)"
                       className="flex-1"
                     />
                     {editingProduct.sellingPrice &&
@@ -1067,7 +1098,6 @@ export default function InventoryPage() {
                         </div>
                       )}
                   </div>
-
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">

@@ -135,14 +135,36 @@ export const generateInvoiceHTML = (
           </tr>
         </thead>
         <tbody>
-          ${items.map(item => `
+          ${items.map(item => {
+            // Fix Arabic product name with numbers
+            let displayName = item.name;
+
+            // Check if the name starts with a number pattern (like "10kg" or "200 g")
+            if (isArabic) {
+              // Match patterns like "10kg مسحوق غبار" or "200 g شاي العرب"
+              const numericPrefixPattern = /^([\d]+[a-zA-Z]*|[\d]+\s+[a-zA-Z]+)\s+(.+)$/;
+              const match = item.name.match(numericPrefixPattern);
+
+              if (match) {
+                // Reorder to put the Arabic text first, followed by the numeric part
+                // e.g., "10kg مسحوق غبار" becomes "مسحوق غبار 10kg"
+                displayName = `${match[2]} ${match[1]}`;
+              }
+            }
+
+            // Format prices with MAD after the number
+            const priceFormatted = `${item.price.toFixed(2)} MAD`;
+            const totalFormatted = `${(item.price * item.quantity).toFixed(2)} MAD`;
+
+            return `
             <tr>
-              <td>${item.name}</td>
+              <td>${displayName}</td>
               <td>${item.quantity}</td>
-              <td>${item.price.toFixed(2)} MAD</td>
-              <td>${(item.price * item.quantity).toFixed(2)} MAD</td>
+              <td>${priceFormatted}</td>
+              <td>${totalFormatted}</td>
             </tr>
-          `).join('')}
+            `;
+          }).join('')}
         </tbody>
       </table>
 

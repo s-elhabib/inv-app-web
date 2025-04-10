@@ -334,7 +334,7 @@ export default function NewSupplierOrderPage() {
         // Store multiple images as a JSON string in the single invoice_image field
         invoice_image:
           invoiceImages.length > 0 ? JSON.stringify(invoiceImages) : null,
-        total_amount: totalAmount,
+        total_amount: Math.round(totalAmount), // Round to nearest integer as database expects integer
         status: "pending",
         notes: notes,
       };
