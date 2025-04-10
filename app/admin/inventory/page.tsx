@@ -52,6 +52,19 @@ interface Product {
   // - updated_at
 }
 
+// Interface for product form state (during editing)
+interface ProductFormState {
+  id?: number;
+  name: string;
+  stock: number;
+  price: string; // Use string for editing to preserve decimal input
+  sellingPrice: string; // Use string for editing to preserve decimal input
+  category?: string;
+  category_id: string;
+  image?: string;
+  created_at?: string;
+}
+
 // We'll fetch products from the database instead of using static data
 
 interface Category {
@@ -63,13 +76,13 @@ interface Category {
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({
+  const [newProduct, setNewProduct] = useState<ProductFormState>({
     name: "",
     category: "",
     category_id: "", // Empty string for UUID
     stock: 0,
-    price: 0,
-    sellingPrice: 0,
+    price: "", // Empty string for better UX
+    sellingPrice: "", // Empty string for better UX
     // Fields removed as they don't exist in the database:
     // - description
     // - cost
@@ -83,7 +96,7 @@ export default function InventoryPage() {
     null
   );
   const [sellQuantity, setSellQuantity] = useState(1);
-  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(
+  const [editingProduct, setEditingProduct] = useState<ProductFormState | null>(
     null
   );
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -153,10 +166,16 @@ export default function InventoryPage() {
       }
 
       // Only include fields that exist in the database schema
+      // Convert string price values to numbers for saving
       const productToSave = {
         name: newProduct.name,
-        price: newProduct.price || 0,
-        sellingPrice: newProduct.sellingPrice || newProduct.price || 0,
+        price: newProduct.price === "" ? 0 : parseFloat(newProduct.price) || 0,
+        sellingPrice:
+          (newProduct.sellingPrice === ""
+            ? 0
+            : parseFloat(newProduct.sellingPrice)) ||
+          (newProduct.price === "" ? 0 : parseFloat(newProduct.price)) ||
+          0,
         stock: newProduct.stock || 0,
         category_id: newProduct.category_id,
         // Don't include fields that don't exist in the database:
@@ -187,8 +206,8 @@ export default function InventoryPage() {
           category: "",
           category_id: "", // Empty string for UUID
           stock: 0,
-          price: 0,
-          sellingPrice: 0,
+          price: "", // Empty string for better UX
+          sellingPrice: "", // Empty string for better UX
           // Fields removed as they don't exist in the database:
           // - description
           // - cost
@@ -208,14 +227,31 @@ export default function InventoryPage() {
     >
   ) => {
     const { name, value } = e.target;
+
+    // Handle different field types appropriately
+    let processedValue = value;
+
+    if (name === "stock") {
+      // For stock, convert to integer
+      processedValue = value === "" ? 0 : parseInt(value, 10);
+    } else if (name === "price" || name === "sellingPrice") {
+      // For price fields, keep as string but sanitize
+      // Remove any non-numeric characters except decimal point
+      const sanitizedValue = value.replace(/[^0-9.]/g, "");
+      // Ensure only one decimal point
+      const parts = sanitizedValue.split(".");
+      processedValue =
+        parts[0] + (parts.length > 1 ? "." + parts.slice(1).join("") : "");
+      // Allow empty value during editing
+      // Empty will be converted to 0 only when saving
+    } else if (name === "category_id") {
+      // Keep category_id as string for UUID
+      processedValue = value;
+    }
+
     setNewProduct({
       ...newProduct,
-      [name]:
-        name === "stock" || name === "price" // cost field removed as it doesn't exist in the database
-          ? parseFloat(value)
-          : name === "category_id"
-          ? value // Keep as string for UUID
-          : value,
+      [name]: processedValue,
     });
   };
 
@@ -227,21 +263,43 @@ export default function InventoryPage() {
     if (!editingProduct) return;
 
     const { name, value } = e.target;
+
+    // Handle different field types appropriately
+    let processedValue = value;
+
+    if (name === "stock") {
+      // For stock, convert to integer
+      processedValue = value === "" ? 0 : parseInt(value, 10);
+    } else if (name === "price" || name === "sellingPrice") {
+      // For price fields, keep as string but sanitize
+      // Remove any non-numeric characters except decimal point
+      const sanitizedValue = value.replace(/[^0-9.]/g, "");
+      // Ensure only one decimal point
+      const parts = sanitizedValue.split(".");
+      processedValue =
+        parts[0] + (parts.length > 1 ? "." + parts.slice(1).join("") : "");
+      // Allow empty value during editing
+      // Empty will be converted to 0 only when saving
+    } else if (name === "category_id") {
+      // Keep category_id as string for UUID
+      processedValue = value;
+    }
+
     setEditingProduct({
       ...editingProduct,
-      [name]:
-        name === "stock" || name === "price" // cost field removed as it doesn't exist in the database
-          ? parseFloat(value)
-          : name === "category_id"
-          ? value // Keep as string for UUID
-          : value,
+      [name]: processedValue,
     });
   };
 
   const openEditDialog = (productId: number) => {
     const product = products.find((p) => p.id === productId);
     if (product) {
-      setEditingProduct({ ...product });
+      // Convert numeric price values to strings for editing
+      setEditingProduct({
+        ...product,
+        price: product.price.toString(),
+        sellingPrice: (product.sellingPrice || product.price).toString(),
+      });
       setSelectedProductId(productId);
       setEditDialogOpen(true);
     }
@@ -263,10 +321,21 @@ export default function InventoryPage() {
       }
 
       // Only include fields that exist in the database schema
+      // Convert string price values to numbers for saving
       const productToUpdate = {
         name: editingProduct.name,
-        price: editingProduct.price || 0,
-        sellingPrice: editingProduct.sellingPrice || editingProduct.price || 0,
+        price:
+          editingProduct.price === ""
+            ? 0
+            : parseFloat(editingProduct.price) || 0,
+        sellingPrice:
+          (editingProduct.sellingPrice === ""
+            ? 0
+            : parseFloat(editingProduct.sellingPrice)) ||
+          (editingProduct.price === ""
+            ? 0
+            : parseFloat(editingProduct.price)) ||
+          0,
         stock: editingProduct.stock || 0,
         category_id: editingProduct.category_id,
         // Don't include fields that don't exist in the database:
@@ -695,20 +764,6 @@ export default function InventoryPage() {
               </select>
             </div>
             {/* Description field removed as it doesn't exist in the database */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="stock" className="text-right">
-                Stock
-              </Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                value={newProduct.stock}
-                onChange={handleInputChange}
-                className="col-span-3"
-                min="0"
-              />
-            </div>
             {/* Cost field removed as it doesn't exist in the database */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="price" className="text-right">
@@ -717,12 +772,13 @@ export default function InventoryPage() {
               <Input
                 id="price"
                 name="price"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*(\.[0-9]+)?"
                 value={newProduct.price}
                 onChange={handleInputChange}
                 className="col-span-3"
-                min="0"
+                placeholder="Enter price (e.g. 10.50)"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -732,9 +788,24 @@ export default function InventoryPage() {
               <Input
                 id="sellingPrice"
                 name="sellingPrice"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*(\.[0-9]+)?"
                 value={newProduct.sellingPrice}
+                onChange={handleInputChange}
+                className="col-span-3"
+                placeholder="Enter selling price (e.g. 15.99)"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="stock" className="text-right">
+                Stock
+              </Label>
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                value={newProduct.stock}
                 onChange={handleInputChange}
                 className="col-span-3"
                 min="0"
@@ -789,20 +860,6 @@ export default function InventoryPage() {
                 </select>
               </div>
               {/* Description field removed as it doesn't exist in the database */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-stock" className="text-right">
-                  Stock
-                </Label>
-                <Input
-                  id="edit-stock"
-                  name="stock"
-                  type="number"
-                  value={editingProduct.stock}
-                  onChange={handleEditInputChange}
-                  className="col-span-3"
-                  min="0"
-                />
-              </div>
               {/* Cost field removed as it doesn't exist in the database */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-price" className="text-right">
@@ -811,12 +868,13 @@ export default function InventoryPage() {
                 <Input
                   id="edit-price"
                   name="price"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*(\.[0-9]+)?"
                   value={editingProduct.price}
                   onChange={handleEditInputChange}
                   className="col-span-3"
-                  min="0"
+                  placeholder="Enter price (e.g. 10.50)"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -826,9 +884,24 @@ export default function InventoryPage() {
                 <Input
                   id="edit-sellingPrice"
                   name="sellingPrice"
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*(\.[0-9]+)?"
                   value={editingProduct.sellingPrice}
+                  onChange={handleEditInputChange}
+                  className="col-span-3"
+                  placeholder="Enter selling price (e.g. 15.99)"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-stock" className="text-right">
+                  Stock
+                </Label>
+                <Input
+                  id="edit-stock"
+                  name="stock"
+                  type="number"
+                  value={editingProduct.stock}
                   onChange={handleEditInputChange}
                   className="col-span-3"
                   min="0"
