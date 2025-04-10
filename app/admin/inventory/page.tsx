@@ -108,6 +108,9 @@ export default function InventoryPage() {
 
   // State to track if price input is in MAD or RIL (default: RIL)
   const [isPriceInMad, setIsPriceInMad] = useState(false);
+
+  // State to track if price input is in MAD or RIL in the edit form (default: RIL)
+  const [isEditPriceInMad, setIsEditPriceInMad] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
@@ -338,6 +341,10 @@ export default function InventoryPage() {
         sellingPrice: (product.sellingPrice || product.price).toString(),
       });
       setSelectedProductId(productId);
+
+      // Reset currency selection to default (RIL) when opening edit dialog
+      setIsEditPriceInMad(false);
+
       setEditDialogOpen(true);
     }
   };
@@ -358,21 +365,29 @@ export default function InventoryPage() {
       }
 
       // Only include fields that exist in the database schema
-      // Convert string price values to numbers for saving
+      // Convert string price values to numbers for saving, handling currency conversion if needed
+      let priceInMad =
+        editingProduct.price === "" ? 0 : parseFloat(editingProduct.price) || 0;
+      let sellingPriceInMad =
+        editingProduct.sellingPrice === ""
+          ? 0
+          : parseFloat(editingProduct.sellingPrice) || 0;
+
+      // If price was entered in RIL, convert to MAD for database storage
+      if (!isEditPriceInMad) {
+        priceInMad = convertToMad(priceInMad);
+        sellingPriceInMad = convertToMad(sellingPriceInMad);
+      }
+
+      // If selling price is empty, use the price
+      if (editingProduct.sellingPrice === "") {
+        sellingPriceInMad = priceInMad;
+      }
+
       const productToUpdate = {
         name: editingProduct.name,
-        price:
-          editingProduct.price === ""
-            ? 0
-            : parseFloat(editingProduct.price) || 0,
-        sellingPrice:
-          (editingProduct.sellingPrice === ""
-            ? 0
-            : parseFloat(editingProduct.sellingPrice)) ||
-          (editingProduct.price === ""
-            ? 0
-            : parseFloat(editingProduct.price)) ||
-          0,
+        price: priceInMad,
+        sellingPrice: sellingPriceInMad,
         stock: editingProduct.stock || 0,
         category_id: editingProduct.category_id,
         // Don't include fields that don't exist in the database:
@@ -863,12 +878,6 @@ export default function InventoryPage() {
                     </div>
                   )}
                 </div>
-
-                <div className="text-xs text-gray-500">
-                  {isPriceInMad
-                    ? "Enter price in MAD, it will be converted to RIL"
-                    : "Enter price in RIL, it will be converted to MAD"}
-                </div>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -903,10 +912,6 @@ export default function InventoryPage() {
                             ).toFixed(2)} MAD`}
                       </div>
                     )}
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  Leave empty to use the same as purchase price
                 </div>
               </div>
             </div>
@@ -978,50 +983,91 @@ export default function InventoryPage() {
                 <Label htmlFor="edit-price" className="text-right">
                   Price
                 </Label>
-                <div className="col-span-3 space-y-1">
-                  <Input
-                    id="edit-price"
-                    name="price"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*(\.[0-9]+)?"
-                    value={editingProduct.price}
-                    onChange={handleEditInputChange}
-                    placeholder="Enter price (e.g. 10.50)"
-                  />
-                  {editingProduct.price &&
-                    !isNaN(parseFloat(editingProduct.price)) && (
-                      <div className="text-xs text-gray-500">
-                        {parseFloat(editingProduct.price)} MAD{" "}
-                        <span className="mx-1">|</span> ريال{" "}
-                        {convertToRial(parseFloat(editingProduct.price))}
-                      </div>
-                    )}
+                <div className="col-span-3 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="edit-price-currency"
+                        checked={isEditPriceInMad}
+                        onChange={() => setIsEditPriceInMad(!isEditPriceInMad)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <label
+                        htmlFor="edit-price-currency"
+                        className="text-sm font-medium"
+                      >
+                        {isEditPriceInMad ? "MAD" : "RIL"}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="edit-price"
+                      name="price"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*(\.[0-9]+)?"
+                      value={editingProduct.price}
+                      onChange={handleEditInputChange}
+                      placeholder={`Enter price in ${
+                        isEditPriceInMad ? "MAD" : "RIL"
+                      }`}
+                      className="flex-1"
+                    />
+                    {editingProduct.price &&
+                      !isNaN(parseFloat(editingProduct.price)) && (
+                        <div className="text-sm text-gray-500 whitespace-nowrap">
+                          ≈{" "}
+                          {isEditPriceInMad
+                            ? `ريال ${convertToRial(
+                                parseFloat(editingProduct.price)
+                              )}`
+                            : `${convertToMad(
+                                parseFloat(editingProduct.price)
+                              ).toFixed(2)} MAD`}
+                        </div>
+                      )}
+                  </div>
+
+                 
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-sellingPrice" className="text-right">
                   Selling Price
                 </Label>
-                <div className="col-span-3 space-y-1">
-                  <Input
-                    id="edit-sellingPrice"
-                    name="sellingPrice"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*(\.[0-9]+)?"
-                    value={editingProduct.sellingPrice}
-                    onChange={handleEditInputChange}
-                    placeholder="Enter selling price (e.g. 15.99)"
-                  />
-                  {editingProduct.sellingPrice &&
-                    !isNaN(parseFloat(editingProduct.sellingPrice)) && (
-                      <div className="text-xs text-orange-300">
-                        {parseFloat(editingProduct.sellingPrice)} MAD{" "}
-                        <span className="mx-1">|</span> ريال{" "}
-                        {convertToRial(parseFloat(editingProduct.sellingPrice))}
-                      </div>
-                    )}
+                <div className="col-span-3 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="edit-sellingPrice"
+                      name="sellingPrice"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*(\.[0-9]+)?"
+                      value={editingProduct.sellingPrice}
+                      onChange={handleEditInputChange}
+                      placeholder={`Enter selling price in ${
+                        isEditPriceInMad ? "MAD" : "RIL"
+                      } (optional)`}
+                      className="flex-1"
+                    />
+                    {editingProduct.sellingPrice &&
+                      !isNaN(parseFloat(editingProduct.sellingPrice)) && (
+                        <div className="text-sm text-orange-300 whitespace-nowrap">
+                          ≈{" "}
+                          {isEditPriceInMad
+                            ? `ريال ${convertToRial(
+                                parseFloat(editingProduct.sellingPrice)
+                              )}`
+                            : `${convertToMad(
+                                parseFloat(editingProduct.sellingPrice)
+                              ).toFixed(2)} MAD`}
+                        </div>
+                      )}
+                  </div>
+
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
