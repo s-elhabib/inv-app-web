@@ -12,13 +12,23 @@ import {
   Settings,
   Loader2,
   Phone,
+  Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getOrderById, getOrders } from "@/lib/supabase";
+import { getOrderById, getOrders, deleteAdminOrder } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { generateAndDownloadInvoice, shareViaWhatsApp } from "@/lib/invoice";
 import { CartItem } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // This function is no longer needed since we're using server-side rendering
 // But we'll keep it commented out for reference
@@ -38,6 +48,9 @@ export default function OrderDetailPage({
 }) {
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -110,6 +123,21 @@ export default function OrderDetailPage({
     )} MAD is ready. Thank you for your business!`;
 
     shareViaWhatsApp(order.client.phone, message);
+  };
+
+  // Delete order
+  const handleDeleteOrder = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAdminOrder(params.id);
+      toast.success("Order deleted successfully");
+      router.push("/admin/orders");
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast.error("Failed to delete order");
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   if (isLoading) {
@@ -322,6 +350,56 @@ export default function OrderDetailPage({
           </Button>
         </Link>
       </div>
+
+      {/* Delete Order Button */}
+      <div className="print:hidden flex justify-center mt-8 mb-4">
+        <Button
+          variant="outline"
+          className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full max-w-xs"
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete Order
+        </Button>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this order? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteOrder}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Order
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

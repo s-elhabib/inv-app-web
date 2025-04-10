@@ -497,6 +497,48 @@ export async function getOrderById(id: string) {
   };
 }
 
+export async function deleteAdminOrder(id: string) {
+  try {
+    // First, get the order to check if it exists and get its items
+    const order = await getOrderById(id);
+
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    // Get the order items to restore product stock
+    const orderItems = order.order_items || [];
+
+    // First delete all order items (sales)
+    const { error: itemsError } = await supabase
+      .from('sales')
+      .delete()
+      .eq('order_id', id);
+
+    if (itemsError) {
+      console.error(`Error deleting order items for order ${id}:`, itemsError);
+      throw itemsError;
+    }
+
+    // Then delete the order
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting order:', error);
+      throw error;
+    }
+
+    // Return the deleted order items for inventory restoration if needed
+    return { success: true, orderItems };
+  } catch (error) {
+    console.error('Error in deleteOrder:', error);
+    throw error;
+  }
+}
+
 // Suppliers
 export async function getSuppliers() {
   const { data, error } = await supabase
