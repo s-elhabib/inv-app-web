@@ -436,34 +436,34 @@ export default function NewSupplierOrderPage() {
   };
 
   return (
-    <div className="w-full max-w-full px-3 sm:px-4 space-y-6 overflow-x-hidden">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            New Supplier Order
-          </h1>
-          <p className="text-muted-foreground">
-            Create a new order from a supplier
-          </p>
+    <>
+      <div className="w-full max-w-full px-3 sm:px-4 space-y-6 overflow-x-hidden">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              New Supplier Order
+            </h1>
+            <p className="text-muted-foreground">
+              Create a new order from a supplier
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 w-full">
-        {/* Order Items and Product Selection */}
-        <Card className="w-full max-w-full">
-          <CardHeader className="px-3 sm:px-6">
+        <div className="grid gap-6 md:grid-cols-2 w-full">
+          {/* Order Items and Product Selection */}
+          <div className="space-y-4 overflow-hidden">
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>Order Items</CardTitle>
-                <CardDescription>Products in this order</CardDescription>
+                <h2 className="text-lg font-semibold">Order Items</h2>
+                <p className="text-sm text-muted-foreground">
+                  Products in this order
+                </p>
               </div>
               <Button size="sm" onClick={() => setShowNewProductDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Product
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="overflow-hidden px-3 sm:px-6">
             <div className="space-y-6">
               {/* Product Search */}
               <div className="space-y-4">
@@ -737,8 +737,8 @@ export default function NewSupplierOrderPage() {
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Order Details */}
         <Card className="w-full max-w-full">
@@ -904,29 +904,27 @@ export default function NewSupplierOrderPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2 sm:gap-4 px-1">
-        <Button variant="outline" onClick={() => router.push("/supplier")}>
-          Cancel
-        </Button>
-        <Button onClick={handleSaveOrder} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Create Order
-            </>
-          )}
-        </Button>
+        {/* Action Buttons */}
+        <div className="col-span-2 flex justify-end gap-2 sm:gap-4 px-1 mt-4">
+          <Button variant="outline" onClick={() => router.push("/supplier")}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveOrder} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Create Order
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-
-      {/* The Add Product Dialog has been integrated directly into the page */}
 
       {/* New Product Dialog */}
       <Dialog
@@ -1033,6 +1031,6 @@ export default function NewSupplierOrderPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
