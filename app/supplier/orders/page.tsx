@@ -244,10 +244,8 @@ export default function SupplierOrdersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Order ID</TableHead>
                     <TableHead>Supplier</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Date & Time</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
@@ -256,19 +254,18 @@ export default function SupplierOrdersPage() {
                 <TableBody>
                   {filteredOrders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.id.substring(0, 8)}...
-                      </TableCell>
                       <TableCell>
                         {order.supplier?.name || "Unknown Supplier"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
                           <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {format(parseISO(order.created_at), "MMM d, yyyy")}
+                          {format(
+                            parseISO(order.created_at),
+                            "MMM d, yyyy • HH:mm"
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{order.invoice_number || "-"}</TableCell>
                       <TableCell>
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
