@@ -436,7 +436,7 @@ export default function NewSupplierOrderPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pb-16 max-w-full">
+    <div className="w-full max-w-full px-3 sm:px-4 space-y-6 overflow-x-hidden">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -448,10 +448,10 @@ export default function NewSupplierOrderPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 max-w-full">
+      <div className="grid gap-6 md:grid-cols-2 w-full">
         {/* Order Items and Product Selection */}
-        <Card>
-          <CardHeader>
+        <Card className="w-full max-w-full">
+          <CardHeader className="px-3 sm:px-6">
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>Order Items</CardTitle>
@@ -463,7 +463,7 @@ export default function NewSupplierOrderPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-hidden px-3 sm:px-6">
             <div className="space-y-6">
               {/* Product Search */}
               <div className="space-y-4">
@@ -481,12 +481,10 @@ export default function NewSupplierOrderPage() {
                 </div>
 
                 <div
-                  className="h-[250px] overflow-y-auto border rounded-md"
+                  className="h-[200px] overflow-y-auto overflow-x-hidden border rounded-md"
                   style={{
-                    maxWidth: "100%",
-                    overflowX: "hidden",
                     WebkitOverflowScrolling: "touch",
-                    position: "relative",
+                    maxWidth: "100%",
                   }}
                 >
                   {filteredProducts.length === 0 ? (
@@ -513,7 +511,7 @@ export default function NewSupplierOrderPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-2 p-2">
+                    <div className="flex flex-col gap-2 p-2 w-full overflow-hidden">
                       {filteredProducts.map((product) => {
                         // Check if product is already in order
                         const existingItem = orderItems.find(
@@ -523,7 +521,7 @@ export default function NewSupplierOrderPage() {
                         return (
                           <div
                             key={product.id}
-                            className="p-2 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden"
+                            className="p-2 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden w-full"
                           >
                             <div className="flex justify-between items-start mb-1">
                               <div className="truncate pr-2">
@@ -545,15 +543,15 @@ export default function NewSupplierOrderPage() {
                             </div>
 
                             {existingItem ? (
-                              <div className="flex items-center justify-between mt-2 bg-accent/50 p-2 rounded-md text-xs sm:text-sm">
-                                <span>
+                              <div className="flex items-center justify-between mt-2 bg-accent/50 p-2 rounded-md text-xs sm:text-sm overflow-hidden">
+                                <span className="truncate mr-2">
                                   Already in order (Qty: {existingItem.quantity}
                                   )
                                 </span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 px-2"
+                                  className="h-7 px-2 shrink-0"
                                   onClick={() => {
                                     // Remove from order
                                     setOrderItems(
@@ -567,8 +565,8 @@ export default function NewSupplierOrderPage() {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 gap-2 mt-2">
-                                <div>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="flex-1 min-w-[100px]">
                                   <Label
                                     htmlFor={`qty-${product.id}`}
                                     className="text-xs"
@@ -583,7 +581,7 @@ export default function NewSupplierOrderPage() {
                                     className="h-8 w-full"
                                   />
                                 </div>
-                                <div>
+                                <div className="flex-1 min-w-[100px]">
                                   <Label
                                     htmlFor={`price-${product.id}`}
                                     className="text-xs"
@@ -599,7 +597,7 @@ export default function NewSupplierOrderPage() {
                                     className="h-8 w-full"
                                   />
                                 </div>
-                                <div className="col-span-2 flex justify-end mt-2">
+                                <div className="w-full flex justify-end mt-2">
                                   <Button
                                     size="sm"
                                     className="h-8 px-3"
@@ -649,39 +647,37 @@ export default function NewSupplierOrderPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="rounded-md border overflow-x-auto max-w-full">
-                      <Table className="w-full min-w-max">
+                    <div className="rounded-md border">
+                      <Table className="w-full table-fixed">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[30%] min-w-[120px]">
-                              Product
+                            <TableHead className="w-[35%]">Product</TableHead>
+                            <TableHead className="w-[15%] text-right">
+                              Qty
                             </TableHead>
-                            <TableHead className="w-[15%] min-w-[80px]">
-                              Quantity
-                            </TableHead>
-                            <TableHead className="w-[20%] min-w-[80px]">
+                            <TableHead className="w-[20%] text-right">
                               Price
                             </TableHead>
-                            <TableHead className="w-[20%] min-w-[80px]">
+                            <TableHead className="w-[20%] text-right">
                               Total
                             </TableHead>
-                            <TableHead className="w-[15%] min-w-[40px]"></TableHead>
+                            <TableHead className="w-[10%]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {orderItems.map((item, index) => (
                             <TableRow key={index}>
                               <TableCell>
-                                <div>
-                                  <div className="font-medium">
+                                <div className="max-w-full overflow-hidden">
+                                  <div className="font-medium truncate">
                                     {item.product.name}
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground truncate">
                                     {item.product.category || "Uncategorized"}
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   min="1"
@@ -692,10 +688,10 @@ export default function NewSupplierOrderPage() {
                                       parseInt(e.target.value) || 1
                                     )
                                   }
-                                  className="w-full max-w-[80px]"
+                                  className="w-16 ml-auto"
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   min="0"
@@ -707,10 +703,10 @@ export default function NewSupplierOrderPage() {
                                       parseFloat(e.target.value) || 0
                                     )
                                   }
-                                  className="w-full max-w-[100px]"
+                                  className="w-20 ml-auto"
                                 />
                               </TableCell>
-                              <TableCell className="font-medium">
+                              <TableCell className="text-right font-medium">
                                 {formatCurrency(item.total)}
                               </TableCell>
                               <TableCell>
@@ -745,12 +741,12 @@ export default function NewSupplierOrderPage() {
         </Card>
 
         {/* Order Details */}
-        <Card>
-          <CardHeader>
+        <Card className="w-full max-w-full">
+          <CardHeader className="px-3 sm:px-6">
             <CardTitle>Order Details</CardTitle>
             <CardDescription>Enter the order information</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-hidden px-3 sm:px-6">
             {/* Supplier Selection */}
             <div className="space-y-2">
               <Label htmlFor="supplier">
@@ -758,16 +754,18 @@ export default function NewSupplierOrderPage() {
               </Label>
 
               {selectedSupplier ? (
-                <div className="p-3 border rounded-md bg-accent/20 flex justify-between items-center">
-                  <div>
-                    <div className="font-medium">{selectedSupplier.name}</div>
+                <div className="p-3 border rounded-md bg-accent/20 flex justify-between items-center overflow-hidden">
+                  <div className="overflow-hidden">
+                    <div className="font-medium truncate">
+                      {selectedSupplier.name}
+                    </div>
                     {selectedSupplier.contact_person && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground truncate">
                         Contact: {selectedSupplier.contact_person}
                       </div>
                     )}
                     {selectedSupplier.phone && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground truncate">
                         Phone: {selectedSupplier.phone}
                       </div>
                     )}
@@ -909,7 +907,7 @@ export default function NewSupplierOrderPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-2 sm:gap-4 px-1">
         <Button variant="outline" onClick={() => router.push("/supplier")}>
           Cancel
         </Button>
