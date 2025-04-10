@@ -87,7 +87,6 @@ export default function NewSupplierOrderPage() {
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: "",
     category_id: "",
-    stock: 0,
     price: 0,
     sellingPrice: 0,
   });
@@ -235,11 +234,6 @@ export default function NewSupplierOrderPage() {
       return;
     }
 
-    if (!newProduct.category_id) {
-      toast.error("Category is required");
-      return;
-    }
-
     try {
       setIsSaving(true);
 
@@ -248,8 +242,8 @@ export default function NewSupplierOrderPage() {
         name: newProduct.name,
         price: newProduct.price || 0,
         sellingPrice: newProduct.sellingPrice || newProduct.price || 0,
-        stock: newProduct.stock || 0,
-        category_id: newProduct.category_id,
+        stock: 0, // Default to 0 stock
+        category_id: newProduct.category_id || null, // Make category optional
       };
 
       // Save the new product
@@ -265,18 +259,13 @@ export default function NewSupplierOrderPage() {
 
       setProducts([...products, productWithCategory]);
 
-      // Add the new product to the order with default quantity and price
-      handleAddProductToOrder(
-        productWithCategory,
-        newProduct.stock || 1,
-        newProduct.price || 0
-      );
+      // No longer automatically adding the product to the order
+      // The user will need to select it from the product list
 
       // Reset the form
       setNewProduct({
         name: "",
         category_id: "",
-        stock: 0,
         price: 0,
         sellingPrice: 0,
       });
@@ -284,7 +273,9 @@ export default function NewSupplierOrderPage() {
       // Close the dialog
       setShowNewProductDialog(false);
 
-      toast.success("Product added successfully");
+      toast.success(
+        "Product created successfully. You can now add it to your order."
+      );
     } catch (error) {
       console.error("Error adding product:", error);
       toast.error("Failed to add product");
@@ -458,169 +449,6 @@ export default function NewSupplierOrderPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 max-w-full">
-        {/* Order Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Details</CardTitle>
-            <CardDescription>Enter the order information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Supplier Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="supplier">
-                Supplier <span className="text-red-500">*</span>
-              </Label>
-
-              {selectedSupplier ? (
-                <div className="p-3 border rounded-md bg-accent/20 flex justify-between items-center">
-                  <div>
-                    <div className="font-medium">{selectedSupplier.name}</div>
-                    {selectedSupplier.contact_person && (
-                      <div className="text-sm text-muted-foreground">
-                        Contact: {selectedSupplier.contact_person}
-                      </div>
-                    )}
-                    {selectedSupplier.phone && (
-                      <div className="text-sm text-muted-foreground">
-                        Phone: {selectedSupplier.phone}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedSupplier(null)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Select
-                  onValueChange={(value) => {
-                    const supplier = suppliers.find((s) => s.id === value);
-                    if (supplier) {
-                      setSelectedSupplier(supplier);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Invoice Number */}
-            <div className="space-y-2">
-              <Label htmlFor="invoice-number">Invoice Number</Label>
-              <Input
-                id="invoice-number"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="Enter invoice number"
-              />
-            </div>
-
-            {/* Invoice Images */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Invoice Images</Label>
-                <span className="text-xs text-muted-foreground">
-                  {invoiceImages.length} image(s)
-                </span>
-              </div>
-              <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 bg-muted/50">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  ref={fileInputRef}
-                  capture="environment"
-                  multiple
-                />
-
-                {invoiceImages.length > 0 ? (
-                  <div className="w-full space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {invoiceImages.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={image}
-                            alt={`Invoice ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-md border"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeImage(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                            Image {index + 1}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add more button */}
-                      <div
-                        className="border-2 border-dashed rounded-md flex items-center justify-center h-32 cursor-pointer hover:bg-accent/10 transition-colors"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <div className="flex flex-col items-center">
-                          <Plus className="h-8 w-8 text-muted-foreground mb-1" />
-                          <p className="text-xs text-muted-foreground">
-                            Add More
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Drag and drop images or click to upload
-                    </p>
-                    <div className="flex gap-2">
-                      <Button onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Images
-                      </Button>
-                      <Button onClick={handleTakePhoto} variant="outline">
-                        <Camera className="mr-2 h-4 w-4" />
-                        Take Photo
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Enter any additional notes"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Order Items and Product Selection */}
         <Card>
           <CardHeader>
@@ -629,11 +457,7 @@ export default function NewSupplierOrderPage() {
                 <CardTitle>Order Items</CardTitle>
                 <CardDescription>Products in this order</CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowNewProductDialog(true)}
-              >
+              <Button size="sm" onClick={() => setShowNewProductDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Product
               </Button>
@@ -919,6 +743,169 @@ export default function NewSupplierOrderPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Order Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Details</CardTitle>
+            <CardDescription>Enter the order information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Supplier Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="supplier">
+                Supplier <span className="text-red-500">*</span>
+              </Label>
+
+              {selectedSupplier ? (
+                <div className="p-3 border rounded-md bg-accent/20 flex justify-between items-center">
+                  <div>
+                    <div className="font-medium">{selectedSupplier.name}</div>
+                    {selectedSupplier.contact_person && (
+                      <div className="text-sm text-muted-foreground">
+                        Contact: {selectedSupplier.contact_person}
+                      </div>
+                    )}
+                    {selectedSupplier.phone && (
+                      <div className="text-sm text-muted-foreground">
+                        Phone: {selectedSupplier.phone}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedSupplier(null)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  onValueChange={(value) => {
+                    const supplier = suppliers.find((s) => s.id === value);
+                    if (supplier) {
+                      setSelectedSupplier(supplier);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Invoice Number */}
+            <div className="space-y-2">
+              <Label htmlFor="invoice-number">Invoice Number</Label>
+              <Input
+                id="invoice-number"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="Enter invoice number"
+              />
+            </div>
+
+            {/* Invoice Images */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Invoice Images</Label>
+                <span className="text-xs text-muted-foreground">
+                  {invoiceImages.length} image(s)
+                </span>
+              </div>
+              <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 bg-muted/50">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  ref={fileInputRef}
+                  capture="environment"
+                  multiple
+                />
+
+                {invoiceImages.length > 0 ? (
+                  <div className="w-full space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {invoiceImages.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={image}
+                            alt={`Invoice ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-md border"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            Image {index + 1}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add more button */}
+                      <div
+                        className="border-2 border-dashed rounded-md flex items-center justify-center h-32 cursor-pointer hover:bg-accent/10 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="flex flex-col items-center">
+                          <Plus className="h-8 w-8 text-muted-foreground mb-1" />
+                          <p className="text-xs text-muted-foreground">
+                            Add More
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Drag and drop images or click to upload
+                    </p>
+                    <div className="flex gap-2">
+                      <Button onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Images
+                      </Button>
+                      <Button onClick={handleTakePhoto} variant="outline">
+                        <Camera className="mr-2 h-4 w-4" />
+                        Take Photo
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Enter any additional notes"
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Action Buttons */}
@@ -971,9 +958,7 @@ export default function NewSupplierOrderPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="product-category">
-                Category <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="product-category">Category</Label>
               <Select
                 name="category_id"
                 value={newProduct.category_id?.toString()}
@@ -985,7 +970,7 @@ export default function NewSupplierOrderPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder="Select a category (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
@@ -1027,19 +1012,6 @@ export default function NewSupplierOrderPage() {
                   placeholder="0.00"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-stock">Initial Stock</Label>
-              <Input
-                id="product-stock"
-                name="stock"
-                type="number"
-                min="0"
-                value={newProduct.stock}
-                onChange={handleNewProductChange}
-                placeholder="0"
-              />
             </div>
           </div>
 
