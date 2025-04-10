@@ -32,6 +32,7 @@ import {
   Download,
   Printer,
   Eye,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -39,6 +40,7 @@ import {
   updateSupplierOrder,
   updateProduct,
   getProductById,
+  deleteSupplierOrder,
 } from "@/lib/supabase";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -69,7 +71,9 @@ export default function OrderDetailPage({
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -168,6 +172,21 @@ export default function OrderDetailPage({
     window.print();
   };
 
+  // Delete order
+  const handleDeleteOrder = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteSupplierOrder(params.id);
+      toast.success("Order deleted successfully");
+      router.push("/supplier/orders");
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      toast.error("Failed to delete order");
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 flex justify-center items-center min-h-[60vh]">
@@ -213,17 +232,13 @@ export default function OrderDetailPage({
             className={
               order.status === "received"
                 ? "bg-green-600 hover:bg-green-700"
-                : order.status === "pending"
-                ? "bg-yellow-600 hover:bg-yellow-700"
-                : "bg-red-600 hover:bg-red-700"
+                : "bg-yellow-600 hover:bg-yellow-700"
             }
           >
             {order.status === "received" ? (
               <Check className="mr-2 h-4 w-4" />
-            ) : order.status === "pending" ? (
-              <AlertTriangle className="mr-2 h-4 w-4" />
             ) : (
-              <X className="mr-2 h-4 w-4" />
+              <AlertTriangle className="mr-2 h-4 w-4" />
             )}
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </Button>
@@ -275,9 +290,7 @@ export default function OrderDetailPage({
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     order.status === "received"
                       ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                      : order.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                   }`}
                 >
                   {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -522,6 +535,18 @@ export default function OrderDetailPage({
         </CardContent>
       </Card>
 
+      {/* Delete Order Button */}
+      <div className="print:hidden flex justify-center mt-8 mb-4">
+        <Button
+          variant="outline"
+          className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 w-full max-w-xs"
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete Order
+        </Button>
+      </div>
+
       {/* Update Status Dialog */}
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>
@@ -539,7 +564,6 @@ export default function OrderDetailPage({
               <SelectContent>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="received">Received</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -558,6 +582,44 @@ export default function OrderDetailPage({
                 </>
               ) : (
                 "Update Status"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this order? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteOrder}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Order
+                </>
               )}
             </Button>
           </DialogFooter>

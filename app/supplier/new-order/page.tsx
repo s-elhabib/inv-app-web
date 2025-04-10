@@ -352,7 +352,7 @@ export default function NewSupplierOrderPage() {
 
       await createSupplierOrderItems(orderItemsData);
 
-      // Update product stock and price if changed
+      // Only update product price if changed (not stock - that happens when order is received)
       for (const item of orderItems) {
         try {
           // Get current product data
@@ -361,20 +361,19 @@ export default function NewSupplierOrderPage() {
           );
 
           if (productToUpdate) {
-            // Calculate new stock
-            const newStock = productToUpdate.stock + item.quantity;
-
             // Check if price has changed
             const priceChanged = item.price !== productToUpdate.price;
 
-            // Prepare update data
-            const updateData: any = {
-              stock: newStock,
-            };
-
             // If price has changed, update it
             if (priceChanged) {
-              updateData.price = item.price;
+              // Prepare update data with only the price
+              const updateData: any = {
+                price: item.price,
+              };
+
+              // Update product price in database
+              await updateProduct(item.product_id, updateData);
+
               console.log(
                 `Updating price for product ${productToUpdate.name} from ${productToUpdate.price} to ${item.price}`
               );
@@ -386,13 +385,6 @@ export default function NewSupplierOrderPage() {
                 newPrice: item.price,
               });
             }
-
-            // Update product in database
-            await updateProduct(item.product_id, updateData);
-
-            console.log(
-              `Updated stock for product ${productToUpdate.name} from ${productToUpdate.stock} to ${newStock}`
-            );
           }
         } catch (updateError) {
           console.error(
@@ -455,9 +447,6 @@ export default function NewSupplierOrderPage() {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-semibold">Order Items</h2>
-                <p className="text-sm text-muted-foreground">
-                  Products in this order
-                </p>
               </div>
               <Button size="sm" onClick={() => setShowNewProductDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -467,9 +456,6 @@ export default function NewSupplierOrderPage() {
             <div className="space-y-6">
               {/* Product Search */}
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-medium">Add Products</h3>
-                </div>
                 <div className="relative px-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input

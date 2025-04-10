@@ -60,7 +60,7 @@ export interface SupplierOrder {
   invoice_number?: string;
   invoice_image?: string;
   total_amount: number;
-  status: 'pending' | 'received' | 'cancelled';
+  status: 'pending' | 'received';
   created_at: string;
   notes?: string;
 }

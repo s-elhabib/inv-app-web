@@ -54,11 +54,10 @@ export default function SupplierDashboardPage() {
   ).length;
   const totalProducts = products.length;
 
-  // Calculate total spent on orders
-  const totalSpent = orders.reduce(
-    (sum, order) => sum + (order.total_amount || 0),
-    0
-  );
+  // Calculate total spent on orders (only count received orders)
+  const totalSpent = orders
+    .filter((order) => order.status === "received")
+    .reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -273,9 +272,7 @@ export default function SupplierDashboardPage() {
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
                             order.status === "received"
                               ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                              : order.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                              : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
                           }`}
                         >
                           {order.status.charAt(0).toUpperCase() +

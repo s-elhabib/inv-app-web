@@ -7,10 +7,6 @@ import {
   ShoppingCart,
   DollarSign,
   Box,
-  Home,
-  ShoppingBag,
-  History,
-  Settings,
   TrendingUp,
   TrendingDown,
   BarChart,
@@ -312,7 +308,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="container mx-auto p-4 space-y-6 pb-16 bg-background">
+    <div className="container mx-auto px-3 sm:px-4 space-y-6 pb-16 bg-background max-w-full overflow-x-hidden">
       <div className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
       </div>
@@ -321,24 +317,28 @@ export default function AdminPage() {
         <h2 className="text-xl font-semibold mb-4">Admin Dashboard</h2>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {stats.map((stat, index) => (
           <Card key={index} className="overflow-hidden shadow-sm">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-start">
                 <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
                   <stat.icon className="h-6 w-6 text-accent-foreground" />
                 </div>
               </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <p className="text-muted-foreground mb-2">{stat.title}</p>
+              <div className="text-xl sm:text-3xl font-bold mb-1">
+                {stat.value}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                {stat.title}
+              </p>
               {stat.setTimeframe ? (
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
                   <Button
                     variant={stat.timeframe === "today" ? "default" : "outline"}
                     size="sm"
                     onClick={() => stat.setTimeframe("today")}
-                    className="text-xs h-7 rounded-full"
+                    className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 rounded-full"
                   >
                     Today
                   </Button>
@@ -346,7 +346,7 @@ export default function AdminPage() {
                     variant={stat.timeframe === "week" ? "default" : "outline"}
                     size="sm"
                     onClick={() => stat.setTimeframe("week")}
-                    className="text-xs h-7 rounded-full"
+                    className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 rounded-full"
                   >
                     This Week
                   </Button>
@@ -356,7 +356,7 @@ export default function AdminPage() {
                     }
                     size="sm"
                     onClick={() => stat.setTimeframe("15days")}
-                    className="text-xs h-7 rounded-full"
+                    className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 rounded-full"
                   >
                     15 Days
                   </Button>
@@ -364,7 +364,7 @@ export default function AdminPage() {
                     variant={stat.timeframe === "month" ? "default" : "outline"}
                     size="sm"
                     onClick={() => stat.setTimeframe("month")}
-                    className="text-xs h-7 rounded-full"
+                    className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 rounded-full"
                   >
                     This Month
                   </Button>
@@ -372,7 +372,7 @@ export default function AdminPage() {
                     variant={stat.timeframe === "all" ? "default" : "outline"}
                     size="sm"
                     onClick={() => stat.setTimeframe("all")}
-                    className="text-xs h-7 rounded-full"
+                    className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 rounded-full"
                   >
                     All Time
                   </Button>
@@ -397,19 +397,20 @@ export default function AdminPage() {
         ))}
       </div>
 
+      {/* Inventory and Profit Cards - One per row on all screen sizes */}
       {/* Total Inventory Value Card */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardContent className="p-6">
+      <Card className="overflow-hidden shadow-sm mt-4">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-start">
             <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
               <Box className="h-6 w-6 text-accent-foreground" />
             </div>
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-xl sm:text-3xl font-bold mb-1">
             {/* {formatCurrency(totalInventoryValue)} */}
             {totalInventoryValue} MAD
           </div>
-          <p className="text-muted-foreground mb-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
             Total Inventory Value(RAS LML)
           </p>
           <p className="flex items-center text-xs text-green-500">
@@ -419,8 +420,8 @@ export default function AdminPage() {
       </Card>
 
       {/* Total Profit Card */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardContent className="p-6">
+      <Card className="overflow-hidden shadow-sm mt-4">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between">
             <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center mb-4">
               <BarChart className="h-6 w-6 text-accent-foreground" />
@@ -464,16 +465,18 @@ export default function AdminPage() {
               )}
             </Button>
           </div>
-          <div className="text-3xl font-bold mb-1">
+          <div className="text-xl sm:text-3xl font-bold mb-1">
             {showProfit ? formatCurrency(totalProfit) : "****"}
           </div>
-          <p className="text-muted-foreground mb-4">Total Profit</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-4">
+            Total Profit
+          </p>
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             <Button
               variant={profitTimeframe === "today" ? "default" : "outline"}
               size="sm"
               onClick={() => setProfitTimeframe("today")}
-              className="text-xs h-8 rounded-full"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               Today
             </Button>
@@ -481,7 +484,7 @@ export default function AdminPage() {
               variant={profitTimeframe === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setProfitTimeframe("week")}
-              className="text-xs h-8 rounded-full"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               This Week
             </Button>
@@ -489,7 +492,7 @@ export default function AdminPage() {
               variant={profitTimeframe === "15days" ? "default" : "outline"}
               size="sm"
               onClick={() => setProfitTimeframe("15days")}
-              className="text-xs h-8 rounded-full"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               15 Days
             </Button>
@@ -497,7 +500,7 @@ export default function AdminPage() {
               variant={profitTimeframe === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setProfitTimeframe("month")}
-              className="text-xs h-8 rounded-full"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               This Month
             </Button>
@@ -506,7 +509,7 @@ export default function AdminPage() {
       </Card>
 
       {/* Revenue Chart */}
-      <Card>
+      <Card className="mt-4">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Revenue Over Time</CardTitle>
           <div className="flex space-x-2">
@@ -569,55 +572,6 @@ export default function AdminPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
-        <Link href="/admin" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-primary"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">Dashboard</span>
-          </Button>
-        </Link>
-        <Link href="/admin/new-order" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            <span className="text-xs">New Order</span>
-          </Button>
-        </Link>
-        <Link href="/admin/inventory" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Package className="h-5 w-5" />
-            <span className="text-xs">Inventory</span>
-          </Button>
-        </Link>
-        <Link href="/admin/orders" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <History className="h-5 w-5" />
-            <span className="text-xs">Orders History</span>
-          </Button>
-        </Link>
-        <Link href="/admin/settings" className="w-full">
-          <Button
-            variant="ghost"
-            className="flex flex-col h-full w-full rounded-none text-muted-foreground"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="text-xs">Settings</span>
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 }
