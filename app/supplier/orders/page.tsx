@@ -147,7 +147,7 @@ export default function SupplierOrdersPage() {
   });
 
   return (
-    <div className="container mx-auto p-4 pb-16">
+    <div className="px-3 sm:px-4 pb-16 overflow-x-hidden">
       {filterSupplier && (
         <div className="flex items-center mb-4">
           <Link
@@ -220,28 +220,27 @@ export default function SupplierOrdersPage() {
         </div>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Orders</CardTitle>
-          <CardDescription>
+      <div className="mt-4">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-medium">
             {filteredOrders.length}{" "}
             {filteredOrders.length === 1 ? "order" : "orders"} found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchQuery || dateRange?.from || dateRange?.to
-                ? "No orders match your search criteria"
-                : "No orders found"}
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
+          </h2>
+        </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {searchQuery || dateRange?.from || dateRange?.to
+              ? "No orders match your search criteria"
+              : "No orders found"}
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-3 sm:-mx-4">
+            <div className="border rounded-md mx-3 sm:mx-4">
+              <Table className="w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Supplier</TableHead>
@@ -293,9 +292,9 @@ export default function SupplierOrdersPage() {
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
