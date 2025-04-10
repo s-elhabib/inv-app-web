@@ -75,7 +75,7 @@ export default function SupplierLayout({
       <main className="pb-16">{children}</main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 border-t bg-background">
+      <nav className="fixed bottom-0 left-0 right-0 border-t bg-background z-50">
         <div className="grid h-16 grid-cols-6 items-center">
           {navigation.map((item) => {
             const Icon = item.icon;

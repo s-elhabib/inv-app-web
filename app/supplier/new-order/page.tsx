@@ -437,7 +437,7 @@ export default function NewSupplierOrderPage() {
 
   return (
     <>
-      <div className="w-full max-w-full px-3 sm:px-4 space-y-6 overflow-x-hidden">
+      <div className="w-full max-w-full px-3 sm:px-6 lg:px-8 space-y-6 overflow-x-hidden">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -449,9 +449,9 @@ export default function NewSupplierOrderPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 w-full">
+        <div className="grid gap-6 lg:grid-cols-3 w-full">
           {/* Order Items and Product Selection */}
-          <div className="space-y-4 overflow-hidden">
+          <div className="space-y-4 overflow-hidden lg:col-span-2">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-semibold">Order Items</h2>
@@ -470,7 +470,7 @@ export default function NewSupplierOrderPage() {
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-medium">Add Products</h3>
                 </div>
-                <div className="relative">
+                <div className="relative px-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search products by name or category..."
@@ -481,7 +481,7 @@ export default function NewSupplierOrderPage() {
                 </div>
 
                 <div
-                  className="h-[200px] overflow-y-auto overflow-x-hidden border rounded-md"
+                  className="h-[200px] md:h-[300px] lg:h-[400px] overflow-y-auto overflow-x-hidden border rounded-md mx-1"
                   style={{
                     WebkitOverflowScrolling: "touch",
                     maxWidth: "100%",
@@ -511,7 +511,7 @@ export default function NewSupplierOrderPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2 p-2 w-full overflow-hidden">
+                    <div className="flex flex-col gap-2 p-2 md:p-3 w-full overflow-hidden">
                       {filteredProducts.map((product) => {
                         // Check if product is already in order
                         const existingItem = orderItems.find(
@@ -521,7 +521,7 @@ export default function NewSupplierOrderPage() {
                         return (
                           <div
                             key={product.id}
-                            className="p-2 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden w-full"
+                            className="p-2 md:p-3 rounded-md hover:bg-accent border-b last:border-0 overflow-hidden w-full"
                           >
                             <div className="flex justify-between items-start mb-1">
                               <div className="truncate pr-2">
@@ -639,29 +639,31 @@ export default function NewSupplierOrderPage() {
               </div>
 
               {/* Order Summary */}
-              <div className="space-y-4">
+              <div className="space-y-4 px-1">
                 <h3 className="text-sm font-medium">Order Summary</h3>
                 {orderItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border rounded-md">
+                  <div className="text-center py-8 text-muted-foreground border rounded-md mx-1">
                     No products added to this order yet
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="rounded-md border">
-                      <Table className="w-full table-fixed">
+                  <div className="space-y-4 mx-1">
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table className="w-full md:table-auto">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[35%]">Product</TableHead>
-                            <TableHead className="w-[15%] text-right">
+                            <TableHead className="w-[35%] md:w-auto">
+                              Product
+                            </TableHead>
+                            <TableHead className="w-[15%] md:w-auto text-right">
                               Qty
                             </TableHead>
-                            <TableHead className="w-[20%] text-right">
+                            <TableHead className="w-[20%] md:w-auto text-right">
                               Price
                             </TableHead>
-                            <TableHead className="w-[20%] text-right">
+                            <TableHead className="w-[20%] md:w-auto text-right">
                               Total
                             </TableHead>
-                            <TableHead className="w-[10%]"></TableHead>
+                            <TableHead className="w-[10%] md:w-auto"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -726,7 +728,7 @@ export default function NewSupplierOrderPage() {
                     </div>
 
                     <div className="flex flex-col gap-2 items-end">
-                      <div className="flex justify-between w-full md:w-1/2 py-2 border-t">
+                      <div className="flex justify-between w-full md:w-1/2 lg:w-1/3 py-2 border-t">
                         <span className="font-medium">Total Amount:</span>
                         <span className="font-bold">
                           {formatCurrency(totalAmount)}
@@ -741,12 +743,12 @@ export default function NewSupplierOrderPage() {
         </div>
 
         {/* Order Details */}
-        <Card className="w-full max-w-full">
+        <Card className="w-full max-w-full lg:col-start-3 lg:row-start-1 lg:row-span-1">
           <CardHeader className="px-3 sm:px-6">
             <CardTitle>Order Details</CardTitle>
             <CardDescription>Enter the order information</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 overflow-hidden px-3 sm:px-6">
+          <CardContent className="space-y-5 overflow-hidden px-3 sm:px-6">
             {/* Supplier Selection */}
             <div className="space-y-2">
               <Label htmlFor="supplier">
@@ -821,7 +823,7 @@ export default function NewSupplierOrderPage() {
                   {invoiceImages.length} image(s)
                 </span>
               </div>
-              <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 bg-muted/50">
+              <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 md:p-8 bg-muted/50">
                 <input
                   type="file"
                   accept="image/*"
@@ -834,7 +836,7 @@ export default function NewSupplierOrderPage() {
 
                 {invoiceImages.length > 0 ? (
                   <div className="w-full space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                       {invoiceImages.map((image, index) => (
                         <div key={index} className="relative group">
                           <img
@@ -906,7 +908,7 @@ export default function NewSupplierOrderPage() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="col-span-2 flex justify-end gap-2 sm:gap-4 px-1 mt-4">
+        <div className="lg:col-span-3 flex justify-end gap-2 sm:gap-4 px-1 mt-4">
           <Button variant="outline" onClick={() => router.push("/supplier")}>
             Cancel
           </Button>
