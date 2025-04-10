@@ -510,14 +510,14 @@ export default function AdminPage() {
 
       {/* Revenue Chart */}
       <Card className="mt-4">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle>Revenue Over Time</CardTitle>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2 w-full sm:w-auto">
             <Button
               variant={selectedTimeframe === "today" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("today")}
-              className="text-xs h-8"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               Today
             </Button>
@@ -525,7 +525,7 @@ export default function AdminPage() {
               variant={selectedTimeframe === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("week")}
-              className="text-xs h-8"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               This Week
             </Button>
@@ -533,7 +533,7 @@ export default function AdminPage() {
               variant={selectedTimeframe === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("month")}
-              className="text-xs h-8"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               15 Days
             </Button>
@@ -541,7 +541,7 @@ export default function AdminPage() {
               variant={selectedTimeframe === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedTimeframe("all")}
-              className="text-xs h-8"
+              className="text-[10px] sm:text-xs h-6 sm:h-8 px-2 rounded-full"
             >
               This Month
             </Button>
