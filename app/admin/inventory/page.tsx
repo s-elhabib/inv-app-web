@@ -296,9 +296,9 @@ export default function InventoryPage() {
       // For stock, convert to integer
       processedValue = value === "" ? 0 : parseInt(value, 10);
     } else if (name === "price" || name === "sellingPrice") {
-      // For price fields, just use the raw input value during typing
-      // This allows users to freely type, including decimal points
-      processedValue = value;
+      // For price fields, handle empty values and ensure we store as string
+      // This allows for proper display and editing of decimal values
+      processedValue = value === "" ? "" : value;
     } else if (name === "category_id") {
       // Keep category_id as string for UUID
       processedValue = value;
@@ -326,9 +326,9 @@ export default function InventoryPage() {
       // For stock, convert to integer
       processedValue = value === "" ? 0 : parseInt(value, 10);
     } else if (name === "price" || name === "sellingPrice") {
-      // For price fields, just use the raw input value during typing
-      // This allows users to freely type, including decimal points
-      processedValue = value;
+      // For price fields, handle empty values and ensure we store as string
+      // This allows for proper display and editing of decimal values
+      processedValue = value === "" ? "" : value;
     } else if (name === "category_id") {
       // Keep category_id as string for UUID
       processedValue = value;
@@ -900,9 +900,9 @@ export default function InventoryPage() {
                   <Input
                     id="price"
                     name="price"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*(\.[0-9]+)?"
+                    type="number"
+                    step="0.01"
+                    min="0"
                     value={newProduct.price}
                     onChange={handleInputChange}
                     placeholder={`Enter price in ${
@@ -932,9 +932,9 @@ export default function InventoryPage() {
                   <Input
                     id="sellingPrice"
                     name="sellingPrice"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*(\.[0-9]+)?"
+                    type="number"
+                    step="0.01"
+                    min="0"
                     value={newProduct.sellingPrice}
                     onChange={handleInputChange}
                     placeholder={`Enter selling price in ${
@@ -1070,9 +1070,9 @@ export default function InventoryPage() {
                     <Input
                       id="edit-price"
                       name="price"
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*(\.[0-9]+)?"
+                      type="number"
+                      step="0.01"
+                      min="0"
                       value={editingProduct.price}
                       onChange={handleEditInputChange}
                       placeholder={`Enter price in ${
@@ -1105,9 +1105,9 @@ export default function InventoryPage() {
                     <Input
                       id="edit-sellingPrice"
                       name="sellingPrice"
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*(\.[0-9]+)?"
+                      type="number"
+                      step="0.01"
+                      min="0"
                       value={editingProduct.sellingPrice}
                       onChange={handleEditInputChange}
                       placeholder={`Enter selling price in ${
