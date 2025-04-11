@@ -738,17 +738,23 @@ export async function updateSupplierOrder(id: string, orderData: any) {
   return data;
 }
 
-export async function deleteSupplierOrder(id: string) {
-  // First delete all order items
-  const { error: itemsError } = await supabase
+export async function deleteSupplierOrderItems(orderId: string) {
+  const { error } = await supabase
     .from('supplier_order_items')
     .delete()
-    .eq('supplier_order_id', id);
+    .eq('supplier_order_id', orderId);
 
-  if (itemsError) {
-    console.error(`Error deleting supplier order items for order ${id}:`, itemsError);
-    throw itemsError;
+  if (error) {
+    console.error(`Error deleting supplier order items for order ${orderId}:`, error);
+    throw error;
   }
+
+  return true;
+}
+
+export async function deleteSupplierOrder(id: string) {
+  // First delete all order items
+  await deleteSupplierOrderItems(id);
 
   // Then delete the order
   const { error } = await supabase

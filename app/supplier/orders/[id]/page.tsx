@@ -45,6 +45,7 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
+import { generateInvoiceHTML } from "@/lib/invoice";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -167,11 +168,6 @@ export default function OrderDetailPage({
     }
   };
 
-  // Print invoice
-  const handlePrint = () => {
-    window.print();
-  };
-
   // Delete order
   const handleDeleteOrder = async () => {
     try {
@@ -223,10 +219,79 @@ export default function OrderDetailPage({
           </Button>
         </Link>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
+          {order.status === "received" && (
+            <Button
+              variant="outline"
+              className="bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200"
+              onClick={async () => {
+                try {
+                  // Convert order items to CartItem format
+                  const cartItems = order.order_items.map((item) => ({
+                    id: item.product_id,
+                    name: item.product?.name || "Unknown Product",
+                    price: item.price,
+                    quantity: item.quantity,
+                  }));
+
+                  // Generate invoice HTML
+                  const html = generateInvoiceHTML(
+                    {
+                      id: order.id,
+                      invoiceNumber:
+                        order.invoice_number || order.id.substring(0, 8),
+                      client: null,
+                      products: order.order_items.map((item) => ({
+                        productId: item.product_id,
+                        quantity: item.quantity,
+                      })),
+                      status: order.status,
+                      totalAmount: order.total_amount,
+                      createdAt: order.created_at,
+                    },
+                    cartItems,
+                    "ar"
+                  );
+
+                  // Create a blob from the HTML
+                  const blob = new Blob([html], { type: "text/html" });
+                  const url = URL.createObjectURL(blob);
+
+                  // Open the invoice in a new tab for the user to download/print
+                  window.open(url, "_blank");
+
+                  toast.success("Invoice generated successfully");
+                } catch (error) {
+                  console.error("Error generating invoice:", error);
+                  toast.error("Failed to generate invoice");
+                }
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Generate Invoice
+            </Button>
+          )}
+          {order.status === "pending" && (
+            <Link href={`/supplier/orders/${params.id}/edit`}>
+              <Button variant="outline">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-2 h-4 w-4"
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                  <path d="m15 5 4 4"></path>
+                </svg>
+                Edit Order
+              </Button>
+            </Link>
+          )}
           <Button
             onClick={() => setShowStatusDialog(true)}
             className={
@@ -241,6 +306,13 @@ export default function OrderDetailPage({
               <AlertTriangle className="mr-2 h-4 w-4" />
             )}
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
           </Button>
         </div>
       </div>

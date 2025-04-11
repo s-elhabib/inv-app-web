@@ -19,7 +19,7 @@ import Link from "next/link";
 import { getOrderById, getOrders, deleteAdminOrder } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { generateAndDownloadInvoice, shareViaWhatsApp } from "@/lib/invoice";
+import { generateInvoiceHTML } from "@/lib/invoice";
 import { CartItem } from "@/lib/types";
 import {
   Dialog,
@@ -73,6 +73,7 @@ export default function OrderDetailPage({
     fetchOrder();
   }, [params.id]);
 
+  /* Removed old functions
   const handleGenerateInvoice = async () => {
     if (!order) return;
 
@@ -116,14 +117,34 @@ export default function OrderDetailPage({
       return;
     }
 
-    const message = `Hello ${order.client.name}, your invoice #${
-      order.id
-    } for ${order.total_amount.toFixed(
-      2
-    )} MAD is ready. Thank you for your business!`;
+    // Format date
+    const orderDate = new Date(order.created_at).toLocaleDateString();
 
-    shareViaWhatsApp(order.client.phone, message);
-  };
+    // Create a list of items
+    const itemsList = order.order_items
+      .map((item) => {
+        const price = item.unit_price || item.amount / item.quantity;
+        return `- ${item.product.name} (${item.quantity} x ${price.toFixed(
+          2
+        )} MAD)`;
+      })
+      .join("\n");
+
+    const message =
+      `*Invoice #${order.id}*\n\n` +
+      `📅 Date: ${orderDate}\n` +
+      `👤 Client: ${order.client.name}\n` +
+      `💰 Total: ${order.total_amount.toFixed(2)} MAD\n\n` +
+      `*Items:*\n${itemsList}\n\n` +
+      `Thank you for your business!`;
+
+    // Use the direct WhatsApp URL for sharing without a specific phone number
+    const url = `https://wa.me/${order.client.phone.replace(
+      /\s/g,
+      ""
+    )}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  }; */
 
   // Delete order
   const handleDeleteOrder = async () => {
@@ -283,24 +304,108 @@ export default function OrderDetailPage({
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full" onClick={handleGenerateInvoice}>
-                <FileText className="mr-2 h-4 w-4" />
-                Generate Invoice
-              </Button>
-              {order.client?.phone && (
+              {order.status === "received" && (
                 <Button
                   variant="outline"
-                  className="w-full"
-                  onClick={handleShareViaWhatsApp}
+                  className="w-full bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200"
+                  onClick={async () => {
+                    try {
+                      // Convert order items to CartItem format
+                      const cartItems = order.order_items.map((item) => ({
+                        id: item.product.id,
+                        name: item.product.name,
+                        price: item.unit_price || item.amount / item.quantity,
+                        quantity: item.quantity,
+                      }));
+
+                      // Generate invoice HTML
+                      const html = generateInvoiceHTML(
+                        {
+                          id: order.id,
+                          invoiceNumber:
+                            order.invoice_number || order.id.substring(0, 8),
+                          client: order.client,
+                          products: order.order_items.map((item) => ({
+                            productId: item.product_id,
+                            quantity: item.quantity,
+                          })),
+                          status: order.status,
+                          totalAmount: order.total_amount,
+                          createdAt: order.created_at,
+                        },
+                        cartItems,
+                        "ar"
+                      );
+
+                      // Create a blob from the HTML
+                      const blob = new Blob([html], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+
+                      // Open the invoice in a new tab for the user to download/print
+                      window.open(url, "_blank");
+
+                      toast.success("Invoice generated successfully");
+                    } catch (error) {
+                      console.error("Error generating invoice:", error);
+                      toast.error("Failed to generate invoice");
+                    }
+                  }}
                 >
-                  <Phone className="mr-2 h-4 w-4" />
-                  Share via WhatsApp
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Invoice
                 </Button>
               )}
+
+              <Button
+                variant="destructive"
+                className="w-full mt-4"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Order
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this order? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteOrder}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Order
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-background border-t flex justify-around items-center z-20">
