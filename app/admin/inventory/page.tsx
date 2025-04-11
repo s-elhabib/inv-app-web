@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Plus,
   Minus,
@@ -108,11 +109,11 @@ export default function InventoryPage() {
     // - cost
   });
 
-  // State to track if price input is in MAD or RIL (default: RIL)
-  const [isPriceInMad, setIsPriceInMad] = useState(false);
+  // State to track currency for price input (default: "ril")
+  const [priceCurrency, setPriceCurrency] = useState("ril");
 
-  // State to track if price input is in MAD or RIL in the edit form (default: RIL)
-  const [isEditPriceInMad, setIsEditPriceInMad] = useState(false);
+  // State to track currency for price input in the edit form (default: "mad")
+  const [editPriceCurrency, setEditPriceCurrency] = useState("mad");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
@@ -219,7 +220,7 @@ export default function InventoryPage() {
         cleanSellingPrice === "" ? 0 : parseFloat(cleanSellingPrice) || 0;
 
       // If price was entered in RIL, convert to MAD for database storage
-      if (!isPriceInMad) {
+      if (priceCurrency === "ril") {
         priceInMad = convertToMad(priceInMad);
         sellingPriceInMad = convertToMad(sellingPriceInMad);
       }
@@ -271,7 +272,7 @@ export default function InventoryPage() {
         });
 
         // Reset currency selection to default (RIL)
-        setIsPriceInMad(false);
+        setPriceCurrency("ril");
 
         toast.success("Product added successfully");
       }
@@ -350,8 +351,9 @@ export default function InventoryPage() {
       });
       setSelectedProductId(productId);
 
-      // Always set currency to MAD when editing to show the actual database values
-      setIsEditPriceInMad(true);
+      // Default to MAD when editing to show the actual database values
+      // But allow user to switch to RIL if they prefer
+      setEditPriceCurrency("mad");
 
       setEditDialogOpen(true);
     }
@@ -399,8 +401,11 @@ export default function InventoryPage() {
       let sellingPriceInMad =
         cleanSellingPrice === "" ? 0 : parseFloat(cleanSellingPrice) || 0;
 
-      // Since we're always showing MAD in the edit form, no conversion is needed
-      // The checkbox is only for display purposes, we always store in MAD
+      // If price was entered in RIL, convert to MAD for database storage
+      if (editPriceCurrency === "ril") {
+        priceInMad = convertToMad(priceInMad);
+        sellingPriceInMad = convertToMad(sellingPriceInMad);
+      }
 
       // If selling price is empty, use the price
       if (editingProduct.sellingPrice === "") {
@@ -817,8 +822,9 @@ export default function InventoryPage() {
             <DialogDescription>
               Fill in the details to add a new product to your inventory.
               <div className="mt-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-md text-xs">
-                Note: All prices are stored in MAD in the database. The RIL
-                option is only for display purposes.
+                Note: All prices are stored in MAD in the database. If you
+                select RIL, the values will be automatically converted to MAD (1
+                MAD = 20 RIL) when saved.
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -863,21 +869,31 @@ export default function InventoryPage() {
               </Label>
               <div className="col-span-3 space-y-2">
                 <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="price-currency"
-                      checked={isPriceInMad}
-                      onChange={() => setIsPriceInMad(!isPriceInMad)}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <label
-                      htmlFor="price-currency"
-                      className="text-sm font-medium"
-                    >
-                      {isPriceInMad ? "MAD" : "RIL"}
-                    </label>
-                  </div>
+                  <div className="text-xs text-gray-500">Enter price in:</div>
+                  <RadioGroup
+                    value={priceCurrency}
+                    onValueChange={setPriceCurrency}
+                    className="flex space-x-4"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="mad" id="price-mad" />
+                      <Label
+                        htmlFor="price-mad"
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        MAD
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="ril" id="price-ril" />
+                      <Label
+                        htmlFor="price-ril"
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        RIL
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -890,14 +906,14 @@ export default function InventoryPage() {
                     value={newProduct.price}
                     onChange={handleInputChange}
                     placeholder={`Enter price in ${
-                      isPriceInMad ? "MAD" : "RIL"
+                      priceCurrency === "mad" ? "MAD" : "RIL"
                     }`}
                     className="flex-1"
                   />
                   {newProduct.price && !isNaN(parseFloat(newProduct.price)) && (
                     <div className="text-sm text-gray-500 whitespace-nowrap">
                       ≈{" "}
-                      {isPriceInMad
+                      {priceCurrency === "mad"
                         ? `ريال ${convertToRial(parseFloat(newProduct.price))}`
                         : `${convertToMad(parseFloat(newProduct.price)).toFixed(
                             2
@@ -922,7 +938,7 @@ export default function InventoryPage() {
                     value={newProduct.sellingPrice}
                     onChange={handleInputChange}
                     placeholder={`Enter selling price in ${
-                      isPriceInMad ? "MAD" : "RIL"
+                      priceCurrency === "mad" ? "MAD" : "RIL"
                     } (optional)`}
                     className="flex-1"
                   />
@@ -930,7 +946,7 @@ export default function InventoryPage() {
                     !isNaN(parseFloat(newProduct.sellingPrice)) && (
                       <div className="text-sm text-orange-300 whitespace-nowrap">
                         ≈{" "}
-                        {isPriceInMad
+                        {priceCurrency === "mad"
                           ? `ريال ${convertToRial(
                               parseFloat(newProduct.sellingPrice)
                             )}`
@@ -971,8 +987,9 @@ export default function InventoryPage() {
             <DialogDescription>
               Update the product details.
               <div className="mt-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-md text-xs">
-                Note: You are editing the actual MAD values stored in the
-                database. The RIL display option is only for convenience.
+                Note: All prices are stored in MAD in the database. If you
+                select RIL, the values will be automatically converted to MAD (1
+                MAD = 20 RIL) when saved.
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -1019,23 +1036,33 @@ export default function InventoryPage() {
                 <div className="col-span-3 space-y-2">
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-2">
-                      <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs">
-                        Editing in MAD (database values)
+                      <div className="text-xs text-gray-500">
+                        Enter price in:
                       </div>
-                      <div className="text-xs text-gray-500">Display as:</div>
-                      <input
-                        type="checkbox"
-                        id="edit-price-currency"
-                        checked={isEditPriceInMad}
-                        onChange={() => setIsEditPriceInMad(!isEditPriceInMad)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <label
-                        htmlFor="edit-price-currency"
-                        className="text-sm font-medium"
+                      <RadioGroup
+                        value={editPriceCurrency}
+                        onValueChange={setEditPriceCurrency}
+                        className="flex space-x-4"
                       >
-                        {isEditPriceInMad ? "MAD" : "RIL"}
-                      </label>
+                        <div className="flex items-center space-x-1">
+                          <RadioGroupItem value="mad" id="edit-price-mad" />
+                          <Label
+                            htmlFor="edit-price-mad"
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            MAD
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <RadioGroupItem value="ril" id="edit-price-ril" />
+                          <Label
+                            htmlFor="edit-price-ril"
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            RIL
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
                   </div>
 
@@ -1048,14 +1075,16 @@ export default function InventoryPage() {
                       pattern="[0-9]*(\.[0-9]+)?"
                       value={editingProduct.price}
                       onChange={handleEditInputChange}
-                      placeholder="Enter price in MAD"
+                      placeholder={`Enter price in ${
+                        editPriceCurrency === "mad" ? "MAD" : "RIL"
+                      }`}
                       className="flex-1"
                     />
                     {editingProduct.price &&
                       !isNaN(parseFloat(editingProduct.price)) && (
                         <div className="text-sm text-gray-500 whitespace-nowrap">
                           ≈{" "}
-                          {isEditPriceInMad
+                          {editPriceCurrency === "mad"
                             ? `ريال ${convertToRial(
                                 parseFloat(editingProduct.price)
                               )}`
@@ -1081,14 +1110,16 @@ export default function InventoryPage() {
                       pattern="[0-9]*(\.[0-9]+)?"
                       value={editingProduct.sellingPrice}
                       onChange={handleEditInputChange}
-                      placeholder="Enter selling price in MAD (optional)"
+                      placeholder={`Enter selling price in ${
+                        editPriceCurrency === "mad" ? "MAD" : "RIL"
+                      } (optional)`}
                       className="flex-1"
                     />
                     {editingProduct.sellingPrice &&
                       !isNaN(parseFloat(editingProduct.sellingPrice)) && (
                         <div className="text-sm text-orange-300 whitespace-nowrap">
                           ≈{" "}
-                          {isEditPriceInMad
+                          {editPriceCurrency === "mad"
                             ? `ريال ${convertToRial(
                                 parseFloat(editingProduct.sellingPrice)
                               )}`
