@@ -199,16 +199,82 @@ export default function NewOrderPage() {
     });
   };
 
+  // Handle direct input of quantity
+  const handleQuantityInput = (productId: string, value: string) => {
+    // Allow empty input for editing purposes
+    if (value === "") {
+      // Temporarily allow empty value in the input field
+      setCart((currentCart) => {
+        return currentCart.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: value as any } // Use 'as any' to temporarily allow string
+            : item
+        );
+      });
+      return;
+    }
+
+    // Convert input to number
+    const newQuantity = parseInt(value, 10);
+
+    // Validate input
+    if (isNaN(newQuantity)) {
+      return; // Don't update for non-numeric input
+    }
+
+    // If quantity is less than 1, set it to 1
+    if (newQuantity < 1) {
+      setCart((currentCart) => {
+        return currentCart.map((item) =>
+          item.id === productId ? { ...item, quantity: 1 } : item
+        );
+      });
+      return;
+    }
+
+    setCart((currentCart) => {
+      const item = currentCart.find((item) => item.id === productId);
+      if (!item) return currentCart;
+
+      // Find the product to check stock
+      const product = products.find((p) => p.id === productId);
+      if (!product) return currentCart;
+
+      // Check if quantity exceeds available stock
+      if (newQuantity > product.stock) {
+        toast.error(
+          `Cannot add ${newQuantity} of ${product.name}. Only ${product.stock} available in stock.`
+        );
+        // Set to maximum available stock instead of rejecting the input
+        return currentCart.map((item) =>
+          item.id === productId ? { ...item, quantity: product.stock } : item
+        );
+      }
+
+      // Update the quantity
+      return currentCart.map((item) =>
+        item.id === productId ? { ...item, quantity: newQuantity } : item
+      );
+    });
+  };
+
   const removeFromCart = (productId: string) => {
     setCart((currentCart) =>
       currentCart.filter((item) => item.id !== productId)
     );
   };
 
-  const totalAmount = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const totalAmount = cart.reduce((sum, item) => {
+    // Ensure quantity is a number for calculation
+    const quantity =
+      typeof item.quantity === "string"
+        ? item.quantity === ""
+          ? 0
+          : parseInt(item.quantity, 10)
+        : item.quantity;
+
+    return sum + item.price * (isNaN(quantity) ? 0 : quantity);
+  }, 0);
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -620,9 +686,31 @@ export default function NewOrderPage() {
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
-                            <span className="w-8 text-center">
-                              {item.quantity}
-                            </span>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleQuantityInput(item.id, e.target.value)
+                              }
+                              onBlur={() => {
+                                // Ensure we have a valid number when focus leaves the input
+                                if (
+                                  item.quantity === "" ||
+                                  isNaN(Number(item.quantity))
+                                ) {
+                                  setCart((currentCart) =>
+                                    currentCart.map((cartItem) =>
+                                      cartItem.id === item.id
+                                        ? { ...cartItem, quantity: 1 }
+                                        : cartItem
+                                    )
+                                  );
+                                }
+                              }}
+                              className="w-16 h-8 text-center p-1"
+                            />
                             <Button
                               variant="outline"
                               size="sm"
@@ -738,7 +826,31 @@ export default function NewOrderPage() {
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleQuantityInput(item.id, e.target.value)
+                      }
+                      onBlur={() => {
+                        // Ensure we have a valid number when focus leaves the input
+                        if (
+                          item.quantity === "" ||
+                          isNaN(Number(item.quantity))
+                        ) {
+                          setCart((currentCart) =>
+                            currentCart.map((cartItem) =>
+                              cartItem.id === item.id
+                                ? { ...cartItem, quantity: 1 }
+                                : cartItem
+                            )
+                          );
+                        }
+                      }}
+                      className="w-16 h-8 text-center p-1"
+                    />
                     <Button
                       variant="outline"
                       size="sm"
